@@ -1,0 +1,13 @@
+fn main() -> i32 {
+    // Single-line trivia is discarded.
+    let value: i64 = 0x2a_00 + 42;
+    let flag: bool = true && false || !false;
+    /* outer comment /* nested comment */ outer tail */
+    assert(value >= 42 && value != 0);
+    return as(i32, 0);
+}
+
+comptime fn fold(input: i64) -> i64 { return input * 2 / 1 % 7 - 1; }
+const answer: i64 = 42;
+if else while export extern test import struct enum array_i64 slice_i64 result_i64 void
+"escaped\\ntext" [ ] , . <= < > ==
