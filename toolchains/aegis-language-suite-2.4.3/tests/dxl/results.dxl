@@ -1,0 +1,11 @@
+fn parse(ok: bool) -> result_i64 {
+    if ok { return ok_i64(42); } else { return err_i64(as(i32, 5)); }
+}
+fn main() -> i32 {
+    let a: result_i64 = parse(true);
+    let b: result_i64 = parse(false);
+    assert(unwrap_i64(a) == 42);
+    assert(is_err(b));
+    print_i32(error_code(b));
+    return as(i32, 0);
+}

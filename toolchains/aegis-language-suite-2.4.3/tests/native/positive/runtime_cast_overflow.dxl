@@ -1,0 +1,4 @@
+fn main() -> i32 {
+    let too_wide: i64 = 2147483647 + 1;
+    return as(i32, too_wide);
+}

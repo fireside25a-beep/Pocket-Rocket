@@ -1,0 +1,286 @@
+import "aegis_common.dxl";
+
+fn a_handle(handle: i64, generations: slice_i64, alive: slice_i64) -> AHandle {
+    if handle <= 0 { return AHandle{ok:false,error:101,slot:0}; }
+    let h: i64 = handle-1;
+    let slot: i64 = h % A_MAX_OBJECTS;
+    let generation: i64 = h / A_MAX_OBJECTS;
+    if generation <= 0 || alive[slot] == 0 || generations[slot] != generation {
+        return AHandle{ok:false,error:102,slot:slot};
+    }
+    return AHandle{ok:true,error:0,slot:slot};
+}
+
+fn a_run_range(
+    code: slice_i64,
+    start: i64,
+    finish: i64,
+    top: bool,
+    allowed: i64,
+    stack: slice_i64,
+    heap: slice_i64,
+    bases: slice_i64,
+    lengths: slice_i64,
+    generations: slice_i64,
+    alive: slice_i64,
+    input_sp: i64,
+    input_bump: i64,
+    input_live: i64,
+    input_steps: i64,
+    step_limit: i64,
+    input_trace: i64
+) -> AExec {
+    let pc: i64 = start;
+    let sp: i64 = input_sp;
+    let bump: i64 = input_bump;
+    let live: i64 = input_live;
+    let steps: i64 = input_steps;
+    let trace: i64 = input_trace;
+    let ok: bool = true;
+    let error: i64 = 0;
+    let halted: bool = false;
+    while pc < finish && ok && !halted {
+        let at: i64 = pc;
+        let op: i64 = code[pc];
+        pc=pc+1;
+        if steps >= step_limit { ok=false; error=100; }
+        else {
+            steps=steps+1;
+            trace=a_trace(trace,at);
+            trace=a_trace(trace,op);
+            trace=a_trace(trace,sp);
+        }
+        if ok {
+            if op == A_HALT {
+                if !top || pc != finish { ok=false; error=103; }
+                else if live != 0 { ok=false; error=104; }
+                else { halted=true; }
+            } else if op == A_PUSH {
+                let u: i64 = a_load32(code,pc);
+                pc=pc+4;
+                stack[sp]=u-2147483648;
+                sp=sp+1;
+                trace=a_trace(trace,stack[sp-1]);
+            } else if op == A_BYTES {
+                let amount: i64 = a_load32(code,pc);
+                pc=pc+4;
+                if amount <= 0 || amount > A_MAX_HEAP || bump > A_MAX_HEAP-amount { ok=false; error=140; }
+                else {
+                    let slot: i64 = 0;
+                    let found: bool = false;
+                    while slot < A_MAX_OBJECTS && !found {
+                        if alive[slot] == 0 { found=true; }
+                        else { slot=slot+1; }
+                    }
+                    if !found { ok=false; error=141; }
+                    else if generations[slot] >= 8388606 { ok=false; error=110; }
+                    else {
+                        generations[slot]=generations[slot]+1;
+                        bases[slot]=bump; lengths[slot]=amount; alive[slot]=1;
+                        let z: i64 = 0;
+                        while z < amount { heap[bump+z]=code[pc+z]; z=z+1; }
+                        pc=pc+amount; bump=bump+amount; live=live+1;
+                        stack[sp]=generations[slot]*A_MAX_OBJECTS+slot+1; sp=sp+1;
+                        trace=a_trace(trace,stack[sp-1]);
+                    }
+                }
+            } else if op == A_REPEAT {
+                let count: i64 = a_load32(code,pc);
+                let body_len: i64 = a_load32(code,pc+4);
+                pc=pc+8;
+                let iter: i64 = 0;
+                while iter < count && ok {
+                    let r: AExec = a_run_range(code,pc,pc+body_len,false,allowed,stack,heap,bases,lengths,generations,alive,sp,bump,live,steps,step_limit,trace);
+                    if !r.ok { ok=false; error=r.error; }
+                    else {
+                        sp=r.sp; bump=r.bump; live=r.live; steps=r.steps; trace=r.trace;
+                    }
+                    iter=iter+1;
+                }
+                pc=pc+body_len;
+            } else if op == A_IFZERO {
+                let body_len: i64 = a_load32(code,pc);
+                pc=pc+4;
+                sp=sp-1;
+                let cond: i64 = stack[sp];
+                trace=a_trace(trace,cond);
+                if cond == 0 {
+                    let r: AExec = a_run_range(code,pc,pc+body_len,false,allowed,stack,heap,bases,lengths,generations,alive,sp,bump,live,steps,step_limit,trace);
+                    if !r.ok { ok=false; error=r.error; }
+                    else { sp=r.sp; bump=r.bump; live=r.live; steps=r.steps; trace=r.trace; }
+                }
+                pc=pc+body_len;
+            } else if op == A_DUP {
+                stack[sp]=stack[sp-1]; sp=sp+1;
+            } else if op == A_DROP {
+                sp=sp-1;
+            } else if op == A_SWAP {
+                let t: i64 = stack[sp-1]; stack[sp-1]=stack[sp-2]; stack[sp-2]=t;
+            } else if op == A_PRINT {
+                if !a_caps_allowed(A_CAP_PRINT_I64,allowed) { ok=false; error=105; }
+                else { sp=sp-1; print_i64(stack[sp]); }
+            } else if op == A_NEG {
+                if stack[sp-1] == -9223372036854775807-1 { ok=false; error=106; }
+                else { stack[sp-1]=0-stack[sp-1]; }
+            } else if op == A_ASSERT {
+                sp=sp-1;
+                if stack[sp] == 0 { ok=false; error=107; }
+            } else if op == A_ALLOC {
+                let amount: i64 = stack[sp-1];
+                if amount <= 0 || amount > A_MAX_HEAP || bump > A_MAX_HEAP-amount { ok=false; error=108; }
+                else {
+                    let slot: i64 = 0;
+                    let found: bool = false;
+                    while slot < A_MAX_OBJECTS && !found {
+                        if alive[slot] == 0 { found=true; }
+                        else { slot=slot+1; }
+                    }
+                    if !found { ok=false; error=109; }
+                    else if generations[slot] >= 8388606 { ok=false; error=110; }
+                    else {
+                        generations[slot]=generations[slot]+1;
+                        bases[slot]=bump; lengths[slot]=amount; alive[slot]=1;
+                        let z: i64 = 0;
+                        while z < amount { heap[bump+z]=0; z=z+1; }
+                        bump=bump+amount; live=live+1;
+                        stack[sp-1]=generations[slot]*A_MAX_OBJECTS+slot+1;
+                        trace=a_trace(trace,stack[sp-1]);
+                    }
+                }
+            } else if op == A_MGET {
+                let handle: i64 = stack[sp-2];
+                let index: i64 = stack[sp-1];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else if index < 0 || index >= lengths[decoded.slot] { ok=false; error=111; }
+                else {
+                    sp=sp-2;
+                    stack[sp]=heap[bases[decoded.slot]+index]; sp=sp+1;
+                    trace=a_trace(trace,stack[sp-1]);
+                }
+            } else if op == A_MSET {
+                let handle: i64 = stack[sp-3];
+                let index: i64 = stack[sp-2];
+                let value: i64 = stack[sp-1];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else if index < 0 || index >= lengths[decoded.slot] { ok=false; error=112; }
+                else {
+                    heap[bases[decoded.slot]+index]=value;
+                    sp=sp-2;
+                    trace=a_trace(trace,value);
+                }
+            } else if op == A_FREE {
+                sp=sp-1;
+                let handle: i64 = stack[sp];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else { alive[decoded.slot]=0; live=live-1; trace=a_trace(trace,handle); }
+            } else if op == A_BLEN {
+                let handle: i64 = stack[sp-1];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else { stack[sp]=lengths[decoded.slot]; sp=sp+1; trace=a_trace(trace,stack[sp-1]); }
+            } else if op == A_BGET {
+                let handle: i64 = stack[sp-2];
+                let index: i64 = stack[sp-1];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else if index < 0 || index >= lengths[decoded.slot] { ok=false; error=142; }
+                else {
+                    let value: i64 = heap[bases[decoded.slot]+index];
+                    if value < 0 || value > 255 { ok=false; error=143; }
+                    else { stack[sp-1]=value; trace=a_trace(trace,value); }
+                }
+            } else if op == A_BSET {
+                let handle: i64 = stack[sp-3];
+                let index: i64 = stack[sp-2];
+                let value: i64 = stack[sp-1];
+                let decoded: AHandle = a_handle(handle,generations,alive);
+                if !decoded.ok { ok=false; error=decoded.error; }
+                else if index < 0 || index >= lengths[decoded.slot] { ok=false; error=144; }
+                else if value < 0 || value > 255 { ok=false; error=145; }
+                else { heap[bases[decoded.slot]+index]=value; sp=sp-2; trace=a_trace(trace,value); }
+            } else if op == A_BWRITE {
+                if !a_caps_allowed(A_CAP_WRITE_BYTES,allowed) { ok=false; error=146; }
+                else {
+                    let handle: i64 = stack[sp-1];
+                    let decoded: AHandle = a_handle(handle,generations,alive);
+                    if !decoded.ok { ok=false; error=decoded.error; }
+                    else {
+                        let amount: i64 = lengths[decoded.slot];
+                        let j: i64 = 0;
+                        let valid: bool = true;
+                        while j < amount && valid {
+                            let value: i64 = heap[bases[decoded.slot]+j];
+                            if value < 0 || value > 255 { valid=false; }
+                            j=j+1;
+                        }
+                        if !valid { ok=false; error=147; }
+                        else {
+                            let bytes_owner: array_i64 = array_new(amount,0);
+                            let bytes: slice_i64 = slice(bytes_owner,0,array_len(bytes_owner));
+                            let k: i64 = 0;
+                            while k < amount {
+                                bytes[k]=heap[bases[decoded.slot]+k];
+                                trace=a_trace(trace,bytes[k]);
+                                k=k+1;
+                            }
+                            print_bytes(bytes);
+                            array_free(bytes_owner);
+                        }
+                    }
+                }
+            } else {
+                let b: i64 = stack[sp-1];
+                let a: i64 = stack[sp-2];
+                sp=sp-2;
+                let value: i64 = 0;
+                if op == A_ADD { value=a+b; }
+                else if op == A_SUB { value=a-b; }
+                else if op == A_MUL { value=a*b; }
+                else if op == A_DIV {
+                    if b == 0 { ok=false; error=113; }
+                    else if a == -9223372036854775807-1 && b == -1 { ok=false; error=116; }
+                    else { value=a/b; }
+                } else if op == A_MOD {
+                    if b == 0 { ok=false; error=114; }
+                    else if a == -9223372036854775807-1 && b == -1 { value=0; }
+                    else { value=a%b; }
+                } else if op == A_EQ { if a==b { value=1; } else { value=0; } }
+                else if op == A_LT { if a<b { value=1; } else { value=0; } }
+                else if op == A_LE { if a<=b { value=1; } else { value=0; } }
+                else { ok=false; error=115; }
+                if ok { stack[sp]=value; sp=sp+1; trace=a_trace(trace,value); }
+            }
+        }
+    }
+    if ok && top && !halted { ok=false; error=117; }
+    return AExec{ok:ok,error:error,sp:sp,bump:bump,live:live,steps:steps,trace:trace,halted:halted};
+}
+
+fn a_execute(code: slice_i64, allowed: i64) -> AExec {
+    let checked: AAnalysis = a_verify(code);
+    if !checked.ok { return AExec{ok:false,error:checked.error,sp:0,bump:0,live:0,steps:0,trace:1,halted:false}; }
+    if !a_caps_allowed(checked.caps,allowed) { return AExec{ok:false,error:120,sp:0,bump:0,live:0,steps:0,trace:1,halted:false}; }
+    let stack_owner: array_i64 = array_new(A_MAX_STACK,0);
+    let heap_owner: array_i64 = array_new(A_MAX_HEAP,0);
+    let bases_owner: array_i64 = array_new(A_MAX_OBJECTS,0);
+    let lengths_owner: array_i64 = array_new(A_MAX_OBJECTS,0);
+    let generations_owner: array_i64 = array_new(A_MAX_OBJECTS,0);
+    let alive_owner: array_i64 = array_new(A_MAX_OBJECTS,0);
+    let stack: slice_i64 = slice(stack_owner,0,array_len(stack_owner));
+    let heap: slice_i64 = slice(heap_owner,0,array_len(heap_owner));
+    let bases: slice_i64 = slice(bases_owner,0,array_len(bases_owner));
+    let lengths: slice_i64 = slice(lengths_owner,0,array_len(lengths_owner));
+    let generations: slice_i64 = slice(generations_owner,0,array_len(generations_owner));
+    let alive: slice_i64 = slice(alive_owner,0,array_len(alive_owner));
+    let result: AExec = a_run_range(code,A_HEADER,array_len(code),true,allowed,stack,heap,bases,lengths,generations,alive,0,0,0,0,checked.steps,1);
+    array_free(alive_owner);
+    array_free(generations_owner);
+    array_free(lengths_owner);
+    array_free(bases_owner);
+    array_free(heap_owner);
+    array_free(stack_owner);
+    return result;
+}

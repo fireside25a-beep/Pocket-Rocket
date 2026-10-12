@@ -1,0 +1,5 @@
+fn main() -> i32 {
+    while true {
+    }
+    return as(i32, 0);
+}

@@ -1,0 +1,112 @@
+// Independent DXL path for the Aegis 2.4 ternary-first bounded profile.
+const H: i64 = 40;
+const MAX_HEAP: i64 = 65536;
+const MAX_STACK: i64 = 4096;
+const MAX_OBJECTS: i64 = 256;
+const CAP_PRINT: i64 = 1;
+const CAP_BYTES: i64 = 2;
+const CAP_ALL: i64 = 3;
+const POLICY: i64 = 2;
+
+const OP_HALT: i64 = 0;
+const OP_PUSH: i64 = 1;
+const OP_PRINT: i64 = 10;
+const OP_FREE: i64 = 18;
+const OP_BYTES: i64 = 22;
+const OP_BLEN: i64 = 23;
+const OP_BGET: i64 = 24;
+const OP_BSET: i64 = 25;
+const OP_BWRITE: i64 = 26;
+const OP_BUFFER: i64 = 27;
+const OP_BFREEZE: i64 = 28;
+const OP_BSLICE: i64 = 29;
+const OP_TEXT: i64 = 30;
+const OP_UTF8: i64 = 31;
+const OP_TWRITE: i64 = 32;
+const OP_ERROR: i64 = 33;
+const OP_ISERR: i64 = 34;
+const OP_ERRCODE: i64 = 35;
+const OP_TRY: i64 = 36;
+const OP_TRIT: i64 = 37;
+const OP_TNOT: i64 = 38;
+
+struct Parse { ok: bool, value: i64 }
+struct CompileState { ok: bool, error: i64, pos: i64, depth: i64, max_depth: i64, steps: i64, caps: i64, heap: i64 }
+struct Handle { ok: bool, error: i64, slot: i64 }
+struct Exec { ok: bool, error: i64, sp: i64, bump: i64, live: i64, steps: i64, trace: i64 }
+
+fn space(c:i64)->bool { return c==32||c==9||c==10||c==13; }
+fn digit(c:i64)->bool { return c>=48&&c<=57; }
+fn hex(c:i64)->i64 {
+    if c>=48&&c<=57 { return c-48; }
+    if c>=65&&c<=70 { return c-55; }
+    if c>=97&&c<=102 { return c-87; }
+    return -1;
+}
+fn prefix(s:slice_i64,start:i64,len:i64,p:slice_i64)->bool {
+    if len<=array_len(p) { return false; }
+    let i:i64=0; let ok:bool=true;
+    while i<array_len(p)&&ok { if s[start+i]!=p[i] { ok=false; } i=i+1; }
+    return ok;
+}
+fn token(s:slice_i64,start:i64,len:i64,p:slice_i64)->bool {
+    if len!=array_len(p) { return false; }
+    let i:i64=0; let ok:bool=true;
+    while i<len&&ok { if s[start+i]!=p[i] { ok=false; } i=i+1; }
+    return ok;
+}
+fn parse_i32(s:slice_i64,start:i64,len:i64)->Parse {
+    if len<=0 { return Parse{ok:false,value:0}; }
+    let i:i64=0; let neg:bool=false;
+    if s[start]==45&&len>1 { neg=true;i=1; }
+    let v:i64=0;let ok:bool=true;
+    while i<len&&ok { if !digit(s[start+i]) { ok=false; } else { v=v*10+s[start+i]-48; if v>2147483648 { ok=false; } } i=i+1; }
+    if neg { v=0-v; }
+    if v< -2147483648||v>2147483647 { ok=false; }
+    return Parse{ok:ok,value:v};
+}
+fn parse_u16(s:slice_i64,start:i64,len:i64)->Parse {
+    if len<=0 { return Parse{ok:false,value:0}; }
+    let i:i64=0;let v:i64=0;let ok:bool=true;
+    while i<len&&ok { if !digit(s[start+i]) { ok=false; } else { v=v*10+s[start+i]-48;if v>65535 { ok=false; } }i=i+1; }
+    if v==0 { ok=false; }
+    return Parse{ok:ok,value:v};
+}
+fn store32(out:slice_i64,o:i64,v0:i64)->void {
+    let v:i64=v0;out[o]=v%256;v=v/256;out[o+1]=v%256;v=v/256;out[o+2]=v%256;v=v/256;out[o+3]=v%256;
+}
+fn load32(a:slice_i64,o:i64)->i64 { return a[o]+a[o+1]*256+a[o+2]*65536+a[o+3]*16777216; }
+fn adler(a:slice_i64,start:i64,n:i64)->i64 {
+    let x:i64=1;let y:i64=0;let i:i64=0;
+    while i<n { x=(x+a[start+i])%65521;y=(y+x)%65521;i=i+1; }
+    return y*65536+x;
+}
+fn trace_mix(t:i64,v0:i64)->i64 { let v:i64=v0%251;if v<0{v=v+251;}return (t*257+v+1)%2147483629; }
+fn caps_add(a:i64,b:i64)->i64 { if a==0{return b;}if b==0||a==b{return a;}return CAP_ALL; }
+fn caps_allowed(req:i64,allow:i64)->bool { if req==0{return true;}if req==CAP_PRINT{return allow==CAP_PRINT||allow==CAP_ALL;}if req==CAP_BYTES{return allow==CAP_BYTES||allow==CAP_ALL;}return req==CAP_ALL&&allow==CAP_ALL; }
+
+fn utf8_valid(a:slice_i64,start:i64,n:i64)->bool {
+    let i:i64=0;let ok:bool=true;
+    while i<n&&ok {
+        let c:i64=a[start+i];i=i+1;
+        if c<=127 { }
+        else if c>=194&&c<=223 { if i>=n||a[start+i]<128||a[start+i]>191{ok=false;}else{i=i+1;} }
+        else if c==224 { if i+1>=n||a[start+i]<160||a[start+i]>191||a[start+i+1]<128||a[start+i+1]>191{ok=false;}else{i=i+2;} }
+        else if (c>=225&&c<=236)||(c>=238&&c<=239) { if i+1>=n||a[start+i]<128||a[start+i]>191||a[start+i+1]<128||a[start+i+1]>191{ok=false;}else{i=i+2;} }
+        else if c==237 { if i+1>=n||a[start+i]<128||a[start+i]>159||a[start+i+1]<128||a[start+i+1]>191{ok=false;}else{i=i+2;} }
+        else if c==240 { if i+2>=n||a[start+i]<144||a[start+i]>191||a[start+i+1]<128||a[start+i+1]>191||a[start+i+2]<128||a[start+i+2]>191{ok=false;}else{i=i+3;} }
+        else if c>=241&&c<=243 { if i+2>=n||a[start+i]<128||a[start+i]>191||a[start+i+1]<128||a[start+i+1]>191||a[start+i+2]<128||a[start+i+2]>191{ok=false;}else{i=i+3;} }
+        else if c==244 { if i+2>=n||a[start+i]<128||a[start+i]>143||a[start+i+1]<128||a[start+i+1]>191||a[start+i+2]<128||a[start+i+2]>191{ok=false;}else{i=i+3;} }
+        else { ok=false; }
+    }
+    return ok;
+}
+fn trit_digit(c:i64)->i64 { if c==45||c==78||c==110{return 0;}if c==48||c==90||c==122{return 1;}if c==43||c==80||c==112{return 2;}return -1; }
+fn trit_decode(p:slice_i64,start:i64,count:i64)->i64 {
+    let value:i64=0;let i:i64=0;
+    while i<count { let b:i64=p[start+i/5];let k:i64=0;while k<i%5{b=b/3;k=k+1;}let d:i64=b%3-1;value=value*3+d;i=i+1; }
+    return value;
+}
+fn error_value(code:i64)->i64 { return (-9223372036854775807-1)+code; }
+fn is_error(x:i64)->bool { return x>=(-9223372036854775807-1)+1&&x<=(-9223372036854775807-1)+65535; }
+fn error_code_value(x:i64)->i64 { return x-(-9223372036854775807-1); }

@@ -1,0 +1,198 @@
+import "debug_line.dxl";
+
+const BACKEND_ELF_CAPACITY: i64 = 2048;
+const BACKEND_SECTION_COUNT: i64 = 10;
+const BACKEND_ERROR_OUTPUT_TOO_SMALL: i32 = as(i32,2501);
+const BACKEND_ERROR_WRITE_FAILED: i32 = as(i32,2502);
+const BACKEND_ERROR_BAD_ARGUMENTS: i32 = as(i32,2503);
+
+struct BackendStringTable {
+    length: i64,
+    main_name: i64,
+    file_name: i64,
+}
+
+struct BackendSectionNames {
+    length: i64,
+    text: i64,
+    rodata: i64,
+    rela_text: i64,
+    symtab: i64,
+    strtab: i64,
+    shstrtab: i64,
+    debug_line: i64,
+    rela_debug_line: i64,
+    gnu_stack: i64,
+}
+
+fn backend_emit_main_name(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    cursor=bw_put_u8(out,cursor,109); cursor=bw_put_u8(out,cursor,97);
+    cursor=bw_put_u8(out,cursor,105); cursor=bw_put_u8(out,cursor,110);
+    cursor=bw_put_u8(out,cursor,0); return cursor;
+}
+
+fn backend_emit_string_table(out: slice_i64) -> BackendStringTable {
+    let cursor:i64=0;
+    cursor=bw_put_u8(out,cursor,0);
+    let main_name:i64=cursor;
+    cursor=backend_emit_main_name(out,cursor);
+    let file_name:i64=cursor;
+    cursor=backend_emit_file_name(out,cursor);
+    return BackendStringTable{length:cursor,main_name:main_name,file_name:file_name};
+}
+
+fn backend_emit_section_name(out:slice_i64,at:i64,id:i64)->i64 {
+    let cursor:i64=at;
+    if id==1 { // .text
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,120); cursor=bw_put_u8(out,cursor,116);
+    } else if id==2 { // .rodata
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,114); cursor=bw_put_u8(out,cursor,111); cursor=bw_put_u8(out,cursor,100); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,97);
+    } else if id==3 { // .rela.text
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,114); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,108); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,120); cursor=bw_put_u8(out,cursor,116);
+    } else if id==4 { // .symtab
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,121); cursor=bw_put_u8(out,cursor,109); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,98);
+    } else if id==5 { // .strtab
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,114); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,98);
+    } else if id==6 { // .shstrtab
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,104); cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,114); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,98);
+    } else if id==7 { // .debug_line
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,100); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,98); cursor=bw_put_u8(out,cursor,117); cursor=bw_put_u8(out,cursor,103); cursor=bw_put_u8(out,cursor,95); cursor=bw_put_u8(out,cursor,108); cursor=bw_put_u8(out,cursor,105); cursor=bw_put_u8(out,cursor,110); cursor=bw_put_u8(out,cursor,101);
+    } else if id==8 { // .rela.debug_line
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,114); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,108); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,100); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,98); cursor=bw_put_u8(out,cursor,117); cursor=bw_put_u8(out,cursor,103); cursor=bw_put_u8(out,cursor,95); cursor=bw_put_u8(out,cursor,108); cursor=bw_put_u8(out,cursor,105); cursor=bw_put_u8(out,cursor,110); cursor=bw_put_u8(out,cursor,101);
+    } else { // .note.GNU-stack
+        cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,110); cursor=bw_put_u8(out,cursor,111); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,46); cursor=bw_put_u8(out,cursor,71); cursor=bw_put_u8(out,cursor,78); cursor=bw_put_u8(out,cursor,85); cursor=bw_put_u8(out,cursor,45); cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,116); cursor=bw_put_u8(out,cursor,97); cursor=bw_put_u8(out,cursor,99); cursor=bw_put_u8(out,cursor,107);
+    }
+    cursor=bw_put_u8(out,cursor,0);
+    return cursor;
+}
+
+fn backend_emit_section_names(out:slice_i64)->BackendSectionNames {
+    let cursor:i64=0; cursor=bw_put_u8(out,cursor,0);
+    let text:i64=cursor; cursor=backend_emit_section_name(out,cursor,1);
+    let rodata:i64=cursor; cursor=backend_emit_section_name(out,cursor,2);
+    let rela_text:i64=cursor; cursor=backend_emit_section_name(out,cursor,3);
+    let symtab:i64=cursor; cursor=backend_emit_section_name(out,cursor,4);
+    let strtab:i64=cursor; cursor=backend_emit_section_name(out,cursor,5);
+    let shstrtab:i64=cursor; cursor=backend_emit_section_name(out,cursor,6);
+    let debug_line:i64=cursor; cursor=backend_emit_section_name(out,cursor,7);
+    let rela_debug_line:i64=cursor; cursor=backend_emit_section_name(out,cursor,8);
+    let gnu_stack:i64=cursor; cursor=backend_emit_section_name(out,cursor,9);
+    return BackendSectionNames{length:cursor,text:text,rodata:rodata,rela_text:rela_text,symtab:symtab,strtab:strtab,shstrtab:shstrtab,debug_line:debug_line,rela_debug_line:rela_debug_line,gnu_stack:gnu_stack};
+}
+
+fn backend_emit_symbol(out:slice_i64,at:i64,name:i64,info:i64,section:i64,value:i64,size:i64)->i64 {
+    let cursor:i64=at;
+    cursor=bw_put_u32(out,cursor,name);
+    cursor=bw_put_u8(out,cursor,info);
+    cursor=bw_put_u8(out,cursor,0);
+    cursor=bw_put_u16(out,cursor,section);
+    cursor=bw_put_u64(out,cursor,value);
+    cursor=bw_put_u64(out,cursor,size);
+    return cursor;
+}
+
+fn backend_emit_section_header(out:slice_i64,at:i64,name:i64,kind:i64,flags:i64,offset:i64,size:i64,link:i64,info:i64,alignment:i64,entry_size:i64)->i64 {
+    let cursor:i64=at;
+    cursor=bw_put_u32(out,cursor,name); cursor=bw_put_u32(out,cursor,kind);
+    cursor=bw_put_u64(out,cursor,flags); cursor=bw_put_u64(out,cursor,0);
+    cursor=bw_put_u64(out,cursor,offset); cursor=bw_put_u64(out,cursor,size);
+    cursor=bw_put_u32(out,cursor,link); cursor=bw_put_u32(out,cursor,info);
+    cursor=bw_put_u64(out,cursor,alignment); cursor=bw_put_u64(out,cursor,entry_size);
+    return cursor;
+}
+
+fn backend_write_elf_header(out:slice_i64,section_headers:i64)->void {
+    let cursor:i64=0;
+    cursor=bw_put_u8(out,cursor,127); cursor=bw_put_u8(out,cursor,69); cursor=bw_put_u8(out,cursor,76); cursor=bw_put_u8(out,cursor,70);
+    cursor=bw_put_u8(out,cursor,2); cursor=bw_put_u8(out,cursor,1); cursor=bw_put_u8(out,cursor,1);
+    cursor=bw_zero(out,cursor,9);
+    cursor=bw_put_u16(out,cursor,1);  // ET_REL
+    cursor=bw_put_u16(out,cursor,62); // EM_X86_64
+    cursor=bw_put_u32(out,cursor,1);
+    cursor=bw_put_u64(out,cursor,0); cursor=bw_put_u64(out,cursor,0);
+    cursor=bw_put_u64(out,cursor,section_headers);
+    cursor=bw_put_u32(out,cursor,0);
+    cursor=bw_put_u16(out,cursor,64); cursor=bw_put_u16(out,cursor,0);
+    cursor=bw_put_u16(out,cursor,0); cursor=bw_put_u16(out,cursor,64);
+    cursor=bw_put_u16(out,cursor,BACKEND_SECTION_COUNT);
+    cursor=bw_put_u16(out,cursor,6);
+    assert(cursor==64);
+}
+
+// Writes a fixed, auditable ELF64 x86-64 relocatable fixture. The emitted
+// main returns zero. This validates object-layout machinery; it is deliberately
+// not a general DXIR-to-machine-code backend.
+fn backend_build_elf64_x86_64(out:slice_i64)->result_i64 {
+    if array_len(out)<BACKEND_ELF_CAPACITY { return err_i64(BACKEND_ERROR_OUTPUT_TOO_SMALL); }
+    let str_owner:array_i64=array_new(128,0);
+    let shstr_owner:array_i64=array_new(256,0);
+    let debug_owner:array_i64=array_new(256,0);
+    let str:slice_i64=slice(str_owner,0,array_len(str_owner));
+    let shstr:slice_i64=slice(shstr_owner,0,array_len(shstr_owner));
+    let debug:slice_i64=slice(debug_owner,0,array_len(debug_owner));
+    let strings:BackendStringTable=backend_emit_string_table(str);
+    let names:BackendSectionNames=backend_emit_section_names(shstr);
+    let debug_info:BackendDebugLine=backend_emit_debug_line(debug,0);
+
+    let cursor:i64=0;
+    cursor=bw_zero(out,cursor,64);
+    cursor=bw_align(out,cursor,16);
+    let text_offset:i64=cursor;
+    cursor=bw_put_u8(out,cursor,49);  // xor eax,eax
+    cursor=bw_put_u8(out,cursor,192);
+    cursor=bw_put_u8(out,cursor,195); // ret
+    let text_size:i64=cursor-text_offset;
+
+    let rodata_offset:i64=cursor;
+    cursor=bw_put_u8(out,cursor,65); cursor=bw_put_u8(out,cursor,101);
+    cursor=bw_put_u8(out,cursor,103); cursor=bw_put_u8(out,cursor,105);
+    cursor=bw_put_u8(out,cursor,115); cursor=bw_put_u8(out,cursor,0);
+    let rodata_size:i64=cursor-rodata_offset;
+
+    cursor=bw_align(out,cursor,8);
+    let rela_text_offset:i64=cursor;
+    let rela_text_size:i64=0;
+
+    let symtab_offset:i64=cursor;
+    cursor=backend_emit_symbol(out,cursor,0,0,0,0,0);
+    cursor=backend_emit_symbol(out,cursor,0,3,1,0,0);
+    cursor=backend_emit_symbol(out,cursor,0,3,2,0,0);
+    cursor=backend_emit_symbol(out,cursor,strings.file_name,4,65521,0,0);
+    cursor=backend_emit_symbol(out,cursor,strings.main_name,18,1,0,text_size);
+    let symtab_size:i64=cursor-symtab_offset;
+
+    let strtab_offset:i64=cursor;
+    cursor=bw_copy(out,cursor,str,strings.length);
+    let shstrtab_offset:i64=cursor;
+    cursor=bw_copy(out,cursor,shstr,names.length);
+    let debug_offset:i64=cursor;
+    cursor=bw_copy(out,cursor,debug,debug_info.length);
+
+    cursor=bw_align(out,cursor,8);
+    let rela_debug_offset:i64=cursor;
+    cursor=bw_put_u64(out,cursor,debug_info.address_offset);
+    cursor=bw_put_u64(out,cursor,4294967297); // symbol 1, R_X86_64_64
+    cursor=bw_put_u64(out,cursor,0);
+    let rela_debug_size:i64=cursor-rela_debug_offset;
+    let gnu_stack_offset:i64=cursor;
+
+    cursor=bw_align(out,cursor,8);
+    let section_headers:i64=cursor;
+    cursor=backend_emit_section_header(out,cursor,0,0,0,0,0,0,0,0,0);
+    cursor=backend_emit_section_header(out,cursor,names.text,1,6,text_offset,text_size,0,0,16,0);
+    cursor=backend_emit_section_header(out,cursor,names.rodata,1,2,rodata_offset,rodata_size,0,0,1,0);
+    cursor=backend_emit_section_header(out,cursor,names.rela_text,4,0,rela_text_offset,rela_text_size,4,1,8,24);
+    cursor=backend_emit_section_header(out,cursor,names.symtab,2,0,symtab_offset,symtab_size,5,4,8,24);
+    cursor=backend_emit_section_header(out,cursor,names.strtab,3,0,strtab_offset,strings.length,0,0,1,0);
+    cursor=backend_emit_section_header(out,cursor,names.shstrtab,3,0,shstrtab_offset,names.length,0,0,1,0);
+    cursor=backend_emit_section_header(out,cursor,names.debug_line,1,0,debug_offset,debug_info.length,0,0,1,0);
+    cursor=backend_emit_section_header(out,cursor,names.rela_debug_line,4,0,rela_debug_offset,rela_debug_size,4,7,8,24);
+    cursor=backend_emit_section_header(out,cursor,names.gnu_stack,1,0,gnu_stack_offset,0,0,0,1,0);
+    backend_write_elf_header(out,section_headers);
+
+    array_free(debug_owner);
+    array_free(shstr_owner);
+    array_free(str_owner);
+    return ok_i64(cursor);
+}

@@ -1,0 +1,67 @@
+import "aegis_common.dxl";
+
+fn a_compile_dxasm(src: slice_i64, out: slice_i64) -> result_i64 {
+    let patch_owner: array_i64=array_new(A_MAX_NESTING,0);
+    let body_owner: array_i64=array_new(A_MAX_NESTING,0);
+    let patches: slice_i64=slice(patch_owner,0,array_len(patch_owner));
+    let bodies: slice_i64=slice(body_owner,0,array_len(body_owner));
+    let n:i64=array_len(src); let i:i64=0; let pos:i64=a_emit_header(out);
+    let blocks:i64=0; let halted:bool=false; let ok:bool=true; let error:i64=0;
+    while i<n&&ok {
+        while i<n&&a_space(src[i]) { i=i+1; }
+        if i<n&&src[i]==35 { while i<n&&src[i]!=10 { i=i+1; } }
+        else if i<n {
+            let start:i64=i; while i<n&&!a_space(src[i])&&src[i]!=35 { i=i+1; }
+            let length:i64=i-start;
+            if halted { ok=false;error=80; }
+            else if a_bytes_prefix(src,start,length,true) {
+                let hex_len:i64=length-6;let byte_len:i64=hex_len/2;
+                if hex_len<=0||hex_len%2!=0 { ok=false;error=90; }
+                else if byte_len>A_MAX_HEAP { ok=false;error=91; }
+                else if pos+5+byte_len>array_len(out) { ok=false;error=89; }
+                else {
+                    let j:i64=0;let valid:bool=true;
+                    while j<byte_len&&valid {
+                        let hi:i64=a_hex_nibble(src[start+6+j*2]);let lo:i64=a_hex_nibble(src[start+7+j*2]);
+                        if hi<0||lo<0 { valid=false; } else { out[pos+5+j]=hi*16+lo; }
+                        j=j+1;
+                    }
+                    if !valid { ok=false;error=92; }
+                    else { out[pos]=A_BYTES;a_store32(out,pos+1,byte_len);pos=pos+5+byte_len; }
+                }
+            } else if a_word_upper(src,start,length,1) {
+                while i<n&&a_space(src[i]) { i=i+1; }
+                let vstart:i64=i; while i<n&&!a_space(src[i])&&src[i]!=35 { i=i+1; }
+                let p:AParseInt=a_parse_i32(src,vstart,i-vstart);
+                if !p.ok { ok=false;error=81; }
+                else if pos+5>array_len(out) { ok=false;error=89; }
+                else { pos=a_emit_push(out,pos,p.value); }
+            } else if a_word_upper(src,start,length,2) {
+                while i<n&&a_space(src[i]) { i=i+1; }
+                let vstart:i64=i; while i<n&&!a_space(src[i])&&src[i]!=35 { i=i+1; }
+                let p:AParseInt=a_parse_u32(src,vstart,i-vstart,1000000);
+                if !p.ok { ok=false;error=82; }
+                else if blocks>=A_MAX_NESTING||pos+9>array_len(out) { ok=false;error=83; }
+                else {
+                    pos=a_emit_op(out,pos,A_REPEAT);a_store32(out,pos,p.value);pos=pos+4;
+                    patches[blocks]=pos;a_store32(out,pos,0);pos=pos+4;bodies[blocks]=pos;blocks=blocks+1;
+                }
+            } else if a_word_upper(src,start,length,3) {
+                if blocks>=A_MAX_NESTING||pos+5>array_len(out) { ok=false;error=84; }
+                else { pos=a_emit_op(out,pos,A_IFZERO);patches[blocks]=pos;a_store32(out,pos,0);pos=pos+4;bodies[blocks]=pos;blocks=blocks+1; }
+            } else if a_word_upper(src,start,length,4) {
+                if blocks<=0 { ok=false;error=85; }
+                else { blocks=blocks-1;a_store32(out,patches[blocks],pos-bodies[blocks]); }
+            } else {
+                let op:i64=a_asm_op(src,start,length);
+                if op<0 { ok=false;error=87; }
+                else if pos+1>array_len(out) { ok=false;error=89; }
+                else { pos=a_emit_op(out,pos,op);if op==A_HALT { halted=true; } }
+            }
+        }
+    }
+    if ok&&blocks!=0 { ok=false;error=88; }
+    if ok&&!halted { if pos+1>array_len(out){ok=false;error=89;}else{pos=a_emit_op(out,pos,A_HALT);} }
+    let rc:result_i64=err_i64(as(i32,error));if ok{rc=a_finalize(out,pos,src);}
+    array_free(body_owner);array_free(patch_owner);return rc;
+}

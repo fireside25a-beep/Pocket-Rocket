@@ -1,0 +1,225 @@
+./scripts/setup.sh
+Aegis toolchain ready: /mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-language-suite-2.4.3/build/bin
+./scripts/test.sh
+PASS  DXL check
+PASS  DXL TIR A
+PASS  DXL TIR B
+PASS  DXL TIR byte identity
+PASS  DXL format check
+PASS  DXL native build A
+PASS  DXL native build B
+PASS  DXL native byte identity
+PASS  DXL native execute
+PASS  DXL native expected output
+PASS  DXL native run command
+PASS  DXL native run output
+PASS  DXL native test command
+PASS  DXL native run requires main (exact diagnostic)
+PASS  DXL native test requires test blocks (exact diagnostic)
+PASS  DXL native test forbids early return (exact diagnostic)
+PASS  DXL native build without compatibility frontend
+PASS  DXL native-only executable output
+PASS  DXL native-only expected output
+PASS  DXL native exact diagnostic (exact diagnostic)
+PASS  DXL native missing input (exact diagnostic)
+PASS  DXL native source-size preflight (exact diagnostic)
+PASS  DXL native rejected overwrite (exact diagnostic)
+PASS  DXL native rejected output preserved
+PASS  DXL native missing output directory (exact diagnostic)
+PASS  DXL native output path is directory (exact diagnostic)
+PASS  DXL check unsupported target (exact diagnostic)
+PASS  DXL TIR unsupported target (exact diagnostic)
+PASS  DXL native unsupported target (exact diagnostic)
+PASS  DXL check rejects extra option (exact diagnostic)
+PASS  DXL TIR rejects extra option (exact diagnostic)
+PASS  DXL native build rejects extra option (exact diagnostic)
+PASS  DXL native run rejects output option (exact diagnostic)
+PASS  DXL format rejects extra option (exact diagnostic)
+PASS  DXL targets rejects arguments (exact diagnostic)
+PASS  DXL version rejects arguments (exact diagnostic)
+PASS  DXS compile
+PASS  DXS audit
+PASS  DXS execute
+PASS  DXS repeat compile
+PASS  DXS byte identity
+PASS  DXASM assemble
+PASS  DXASM audit
+PASS  DXASM execute
+PASS  DXASM repeat assemble
+PASS  DXASM byte identity
+PASS  DXS extended-profile compile A
+PASS  DXS extended-profile compile B
+PASS  DXS extended-profile byte identity
+PASS  DXB3 extended-profile execute A
+PASS  DXB3 extended-profile execute B
+PASS  DXB3 extended-profile output identity
+PASS  DXB3 extended-profile expected output
+PASS  DXB3 extended-profile proof identity
+PASS  DXL positive: checked_arithmetic.dxl
+PASS  DXL positive: forward_constants.dxl
+PASS  DXL positive: ownership.dxl
+PASS  DXL positive: results.dxl
+PASS  DXL positive: target_comptime.dxl
+PASS  DXL positive: types.dxl
+PASS  DXL positive: uppercase_block_boundary.dxl
+PASS  DXL negative: array_copy.dxl (rejected)
+PASS  DXL negative: array_struct_field.dxl (rejected)
+PASS  DXL negative: branch_owner_mismatch.dxl (rejected)
+PASS  DXL negative: cast_overflow.dxl (rejected)
+PASS  DXL negative: comptime_overflow.dxl (rejected)
+PASS  DXL negative: constant_cycle.dxl (rejected)
+PASS  DXL negative: duplicate_field.dxl (rejected)
+PASS  DXL negative: duplicate_parameter.dxl (rejected)
+PASS  DXL negative: duplicate_variant.dxl (rejected)
+PASS  DXL negative: literal_overflow.dxl (rejected)
+PASS  DXL negative: loop_consumes_owner.dxl (rejected)
+PASS  DXL negative: missing_array_free.dxl (rejected)
+PASS  DXL negative: recursive_struct.dxl (rejected)
+PASS  DXL negative: slice_return.dxl (rejected)
+PASS  DXL negative: type_mismatch.dxl (rejected)
+PASS  DXL negative: unknown_name.dxl (rejected)
+PASS  DXL negative: unknown_type.dxl (rejected)
+PASS  DXL negative: use_after_free.dxl (rejected)
+PASS  DXL negative: import cycle (rejected)
+PASS  DXS positive compile: arithmetic.dxs
+PASS  DXS positive execute: arithmetic.dxs
+PASS  DXS positive compile: boundaries.dxs
+PASS  DXS positive execute: boundaries.dxs
+PASS  DXS positive compile: comments.dxs
+PASS  DXS positive execute: comments.dxs
+PASS  DXS positive compile: empty.dxs
+PASS  DXS positive execute: empty.dxs
+PASS  DXS positive compile: stack.dxs
+PASS  DXS positive execute: stack.dxs
+PASS  DXS negative compile: after_halt.dxs (rejected)
+PASS  DXS negative compile: bad_integer.dxs (rejected)
+PASS  DXS negative runtime: divzero.dxs (rejected)
+PASS  DXS negative compile: underflow.dxs (rejected)
+PASS  DXS negative compile: unknown.dxs (rejected)
+PASS  DXASM positive assemble: arithmetic.dxasm
+PASS  DXASM positive execute: arithmetic.dxasm
+PASS  DXASM positive assemble: boundaries.dxasm
+PASS  DXASM positive execute: boundaries.dxasm
+PASS  DXASM positive assemble: stack.dxasm
+PASS  DXASM positive execute: stack.dxasm
+PASS  DXASM negative: after_halt.dxasm (rejected)
+PASS  DXASM negative: bad_integer.dxasm (rejected)
+PASS  DXASM negative: underflow.dxasm (rejected)
+PASS  DXASM negative: unknown.dxasm (rejected)
+
+105 PASS / 0 FAIL
+AEGIS_NATIVE_MODE=shipped ./tests/native/test_native.sh
+PASS 01 machine-readable diagnostic map is complete and unique
+PASS 02 checksum-pinned shipped native compiler selected
+PASS 03 repeated native output is byte-identical
+PASS 04 distinct sources generate distinct executables
+PASS 05 counter native output matches
+PASS 06 branches native output matches
+PASS 07 signed native output matches
+PASS 08 static ELF has one load segment, non-executable stack, and no dynamic loader
+PASS 09 poisoned-path compile succeeds; sources contain no process-launch primitive (ptrace unavailable)
+PASS 10 multiple native test blocks execute successfully
+PASS 11 assertion-failure exits deterministically with 71
+PASS 12 add-overflow exits deterministically with 70
+PASS 13 sub-overflow exits deterministically with 70
+PASS 14 mul-overflow exits deterministically with 70
+PASS 15 neg-overflow exits deterministically with 70
+PASS 16 cast-overflow exits deterministically with 70
+PASS 17 loop-fuel exits deterministically with 72
+PASS 18 loop-fuel-boundary exits deterministically with 0
+PASS 19 loop-fuel-first-rejection exits deterministically with 72
+PASS 20 maximum-user-exit exits deterministically with 63
+PASS 21 first-reserved-user-exit exits deterministically with 73
+PASS 22 reserved-user-exit exits deterministically with 73
+PASS 23 negative-user-exit exits deterministically with 73
+PASS 24 duplicate-variable is rejected with diagnostic 2715
+PASS 25 unknown-variable is rejected with diagnostic 2716
+PASS 26 branch-scope is rejected with diagnostic 2716
+PASS 27 unsupported-entry is rejected with diagnostic 2703
+PASS 28 type-mismatch is rejected with diagnostic 2729
+PASS 29 total-return is rejected with diagnostic 2724
+PASS 30 test-early-return is rejected with diagnostic 2733
+PASS 31 nesting-limit is rejected with diagnostic 2730
+PASS 32 unary-nesting-limit is rejected with diagnostic 2730
+PASS 33 source-size-limit is rejected with diagnostic 2728
+Native profile matrix: 33 checks passed
+./scripts/test_loop_matrix.sh
+PASS  matrix case inventory
+PASS  DXL source check A
+PASS  DXL source check B
+PASS  DXL check identity
+PASS  DXL TIR A
+PASS  DXL TIR B
+PASS  DXL TIR identity
+PASS  DXL loop result represented
+PASS  DXL native build A
+PASS  DXL native build B
+PASS  DXL native executable identity
+PASS  DXL native static ELF
+PASS  DXL native execute A
+PASS  DXL native execute B
+PASS  DXL native repeat-output identity
+PASS  DXL native expected output
+PASS  DXL native evidence audit
+PASS  DXS compile A
+PASS  DXS compile B
+PASS  DXS bytecode identity
+PASS  DXS audit
+PASS  DXS execute A
+PASS  DXS execute B
+PASS  DXS proof identity
+PASS  DXS repeat-output identity
+PASS  DXS expected output
+PASS  DXASM assemble A
+PASS  DXASM assemble B
+PASS  DXASM bytecode identity
+PASS  DXASM audit
+PASS  DXASM execute A
+PASS  DXASM execute B
+PASS  DXASM proof identity
+PASS  DXASM repeat-output identity
+PASS  DXASM expected output
+PASS  DXS and DXASM semantic output identity
+PASS  DXL native and DXB3 semantic output identity
+PASS  DXS and DXASM payload identity
+PASS  DXS and DXASM proof identity
+PASS  proof manifest verification
+RESULT: 40 PASS / 0 FAIL
+./scripts/static_check.sh
+PASS  source: dxs
+PASS  source: dxasm
+PASS  source: dxvm
+PASS  source: dxaudit
+PASS  source: dxs24
+PASS  source: dxvm24
+PASS  source: DXL lexer foundation
+PASS  source: DXL parser foundation
+PASS  source: DXL object-writer foundation
+PASS  source: DXL integrated frontend foundation
+PASS  source: DXL native core compiler
+PASS  source: stdlib/deterministic_collections.dxl
+PASS  source: stdlib/serialization.dxl
+PASS  source: stdlib/validation.dxl
+PASS  source: example/comptime_fib.dxl
+PASS  source: example/hello.dxl
+PASS  source: example/stdlib_validation.dxl
+PASS  source: example/types_and_memory.dxl
+PASS  source: example/counter.dxl
+PASS  source: example/native_counter.dxl
+RESULT: 20 DXL source groups PASS / 0 FAIL
+static repository hygiene: PASS
+local documentation links: PASS
+toolchain checksums: PASS
+repository manifest: PASS
+public DXL command and target boundary: PASS
+./scripts/verify_release.sh
+release structure: PASS
+source-language hygiene: PASS
+toolchain inventory: PASS
+foundation inventory: PASS
+AEGIS_NATIVE_MODE=source ./tests/native/test_native.sh
+PASS 01 machine-readable diagnostic map is complete and unique
+PASS 02 DXL-authored native compiler source checks
+PASS 03 two seeded compiler builds are byte-identical
+FAIL shipped native compiler differs from source rebuild
+make: *** [Makefile:21: native-source] Error 1

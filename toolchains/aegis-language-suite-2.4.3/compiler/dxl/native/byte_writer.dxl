@@ -1,0 +1,100 @@
+// Checked deterministic byte writer used by the bounded native profile.
+
+fn native_put_u8(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(at >= 0 && at < array_len(out));
+    assert(value >= 0 && value <= 255);
+    out[at] = value;
+    return at + 1;
+}
+
+fn native_put_u16(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0 && value <= 65535);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    let index: i64 = 0;
+    while index < 2 {
+        cursor = native_put_u8(out,cursor,remaining % 256);
+        remaining = remaining / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_put_u32(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0 && value <= 4294967295);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    let index: i64 = 0;
+    while index < 4 {
+        cursor = native_put_u8(out,cursor,remaining % 256);
+        remaining = remaining / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_put_i32(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= -2147483648 && value <= 2147483647);
+    let encoded: i64 = value;
+    if encoded < 0 { encoded = encoded + 4294967296; }
+    return native_put_u32(out,at,encoded);
+}
+
+fn native_put_u64(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    let index: i64 = 0;
+    while index < 8 {
+        cursor = native_put_u8(out,cursor,remaining % 256);
+        remaining = remaining / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_put_i64(out: slice_i64, at: i64, value: i64) -> i64 {
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    if remaining >= 0 {
+        return native_put_u64(out,cursor,remaining);
+    }
+
+    // Two's-complement emission without unsigned language primitives.  Each
+    // byte is the complemented magnitude-minus-one byte.
+    let magnitude_minus_one: i64 = -(remaining + 1);
+    let index: i64 = 0;
+    while index < 8 {
+        cursor = native_put_u8(out,cursor,255-(magnitude_minus_one % 256));
+        magnitude_minus_one = magnitude_minus_one / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_zero(out: slice_i64, at: i64, amount: i64) -> i64 {
+    assert(amount >= 0);
+    let cursor: i64 = at;
+    let index: i64 = 0;
+    while index < amount {
+        cursor = native_put_u8(out,cursor,0);
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_copy(out: slice_i64, at: i64, source: slice_i64, amount: i64) -> i64 {
+    assert(amount >= 0 && amount <= array_len(source));
+    let cursor: i64 = at;
+    let index: i64 = 0;
+    while index < amount {
+        cursor = native_put_u8(out,cursor,source[index]);
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn native_patch_i32(out: slice_i64, at: i64, value: i64) -> void {
+    let finish: i64 = native_put_i32(out,at,value);
+    assert(finish == at + 4);
+}

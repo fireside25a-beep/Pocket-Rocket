@@ -1,0 +1,54 @@
+import "aegis24_common.dxl";
+
+fn handle(h:i64,g:slice_i64,alive:slice_i64)->Handle {
+    if h<=0{return Handle{ok:false,error:101,slot:0};}
+    let x:i64=h-1;let slot:i64=x%MAX_OBJECTS;let gen:i64=x/MAX_OBJECTS;
+    if gen<=0||alive[slot]==0||g[slot]!=gen{return Handle{ok:false,error:102,slot:0};}
+    return Handle{ok:true,error:0,slot:slot};
+}
+fn heap_utf8(heap:slice_i64,base:i64,n:i64)->bool {
+    let tmp_owner:array_i64=array_new(n,0);let tmp:slice_i64=slice(tmp_owner,0,array_len(tmp_owner));let i:i64=0;let valid:bool=true;
+    while i<n&&valid{let x:i64=heap[base+i];if x<0||x>255{valid=false;}else{tmp[i]=x;}i=i+1;}
+    if valid{valid=utf8_valid(tmp,0,n);}array_free(tmp_owner);return valid;
+}
+fn emit_bytes(heap:slice_i64,base:i64,n:i64)->void {
+    let o:array_i64=array_new(n,0);let b:slice_i64=slice(o,0,array_len(o));let i:i64=0;while i<n{b[i]=heap[base+i];i=i+1;}print_bytes(b);array_free(o);
+}
+fn run(code:slice_i64,allowed:i64)->Exec {
+    if array_len(code)<H||code[0]!=68||code[1]!=88||code[2]!=66||code[3]!=51||code[4]!=3||load32(code,36)!=POLICY{return Exec{ok:false,error:62,sp:0,bump:0,live:0,steps:0,trace:1};}
+    if load32(code,8)!=array_len(code)-H||load32(code,12)!=adler(code,H,array_len(code)-H){return Exec{ok:false,error:64,sp:0,bump:0,live:0,steps:0,trace:1};}
+    let required:i64=load32(code,16);if !caps_allowed(required,allowed){return Exec{ok:false,error:120,sp:0,bump:0,live:0,steps:0,trace:1};}
+    let stack_owner:array_i64=array_new(MAX_STACK,0);let heap_owner:array_i64=array_new(MAX_HEAP,0);let bases_owner:array_i64=array_new(MAX_OBJECTS,0);let lens_owner:array_i64=array_new(MAX_OBJECTS,0);let gens_owner:array_i64=array_new(MAX_OBJECTS,0);let alive_owner:array_i64=array_new(MAX_OBJECTS,0);let kinds_owner:array_i64=array_new(MAX_OBJECTS,0);
+    let stack:slice_i64=slice(stack_owner,0,array_len(stack_owner));let heap:slice_i64=slice(heap_owner,0,array_len(heap_owner));let bases:slice_i64=slice(bases_owner,0,array_len(bases_owner));let lens:slice_i64=slice(lens_owner,0,array_len(lens_owner));let gens:slice_i64=slice(gens_owner,0,array_len(gens_owner));let alive:slice_i64=slice(alive_owner,0,array_len(alive_owner));let kinds:slice_i64=slice(kinds_owner,0,array_len(kinds_owner));
+    let pc:i64=H;let sp:i64=0;let bump:i64=0;let live:i64=0;let steps:i64=0;let trace:i64=1;let ok:bool=true;let error:i64=0;let halted:bool=false;
+    while pc<array_len(code)&&ok&&!halted {
+        let at:i64=pc;let op:i64=code[pc];pc=pc+1;steps=steps+1;trace=trace_mix(trace,at);trace=trace_mix(trace,op);trace=trace_mix(trace,sp);
+        if op==OP_HALT { if pc!=array_len(code){ok=false;error=103;}else if live!=0{ok=false;error=104;}else{halted=true;} }
+        else if op==OP_PUSH { let u:i64=load32(code,pc);pc=pc+4;stack[sp]=u-2147483648;sp=sp+1;trace=trace_mix(trace,stack[sp-1]); }
+        else if op==OP_TRIT { let count:i64=code[pc];pc=pc+1;let packed:i64=(count+4)/5;let v:i64=trit_decode(code,pc,count);pc=pc+packed;stack[sp]=v;sp=sp+1;trace=trace_mix(trace,v); }
+        else if op==OP_ERROR { let ec:i64=load32(code,pc);pc=pc+4;stack[sp]=error_value(ec);sp=sp+1;trace=trace_mix(trace,ec); }
+        else if op==OP_BYTES||op==OP_BUFFER||op==OP_TEXT {
+            let n:i64=load32(code,pc);pc=pc+4;if n<=0||bump+n>MAX_HEAP{ok=false;error=140;}else{let slot:i64=0;let found:bool=false;while slot<MAX_OBJECTS&&!found{if alive[slot]==0{found=true;}else{slot=slot+1;}}if !found{ok=false;error=141;}else{gens[slot]=gens[slot]+1;bases[slot]=bump;lens[slot]=n;alive[slot]=1;if op==OP_BUFFER{kinds[slot]=1;}else if op==OP_TEXT{kinds[slot]=3;}else{kinds[slot]=0;}let i:i64=0;while i<n{heap[bump+i]=code[pc+i];i=i+1;}pc=pc+n;bump=bump+n;live=live+1;stack[sp]=gens[slot]*MAX_OBJECTS+slot+1;sp=sp+1;trace=trace_mix(trace,stack[sp-1]);}}
+        }
+        else if op==OP_PRINT { if !caps_allowed(CAP_PRINT,allowed){ok=false;error=105;}else{sp=sp-1;print_i64(stack[sp]);} }
+        else if op==OP_FREE { sp=sp-1;let h:Handle=handle(stack[sp],gens,alive);if !h.ok{ok=false;error=h.error;}else{alive[h.slot]=0;live=live-1;trace=trace_mix(trace,stack[sp]);} }
+        else if op==OP_BLEN { let h:Handle=handle(stack[sp-1],gens,alive);if !h.ok{ok=false;error=h.error;}else{stack[sp]=lens[h.slot];sp=sp+1;trace=trace_mix(trace,stack[sp-1]);} }
+        else if op==OP_BGET { let h:Handle=handle(stack[sp-2],gens,alive);let ix:i64=stack[sp-1];if !h.ok{ok=false;error=h.error;}else if ix<0||ix>=lens[h.slot]{ok=false;error=142;}else{let v:i64=heap[bases[h.slot]+ix];if v<0||v>255{ok=false;error=143;}else{stack[sp-1]=v;trace=trace_mix(trace,v);}} }
+        else if op==OP_BSET { let h:Handle=handle(stack[sp-3],gens,alive);let ix:i64=stack[sp-2];let v:i64=stack[sp-1];if !h.ok{ok=false;error=h.error;}else if kinds[h.slot]==2||kinds[h.slot]==3{ok=false;error=168;}else if ix<0||ix>=lens[h.slot]{ok=false;error=144;}else if v<0||v>255{ok=false;error=145;}else{heap[bases[h.slot]+ix]=v;sp=sp-2;trace=trace_mix(trace,v);} }
+        else if op==OP_BFREEZE { let h:Handle=handle(stack[sp-1],gens,alive);if !h.ok{ok=false;error=h.error;}else if kinds[h.slot]!=1{ok=false;error=169;}else{kinds[h.slot]=2;trace=trace_mix(trace,stack[sp-1]);} }
+        else if op==OP_BSLICE { let hv:i64=stack[sp-3];let start:i64=stack[sp-2];let n:i64=stack[sp-1];let h:Handle=handle(hv,gens,alive);if !h.ok{ok=false;error=h.error;}else if kinds[h.slot]!=2&&kinds[h.slot]!=3{ok=false;error=170;}else if start<0||n<0||start>lens[h.slot]||n>lens[h.slot]-start{ok=false;error=171;}else{let old:i64=bases[h.slot];bases[h.slot]=old+start;lens[h.slot]=n;if kinds[h.slot]==3&&!heap_utf8(heap,bases[h.slot],n){bases[h.slot]=old;ok=false;error=172;}else{sp=sp-2;stack[sp-1]=hv;trace=trace_mix(trace,n);}} }
+        else if op==OP_UTF8 { let h:Handle=handle(stack[sp-1],gens,alive);if !h.ok{ok=false;error=h.error;}else if !heap_utf8(heap,bases[h.slot],lens[h.slot]){ok=false;error=173;}else{kinds[h.slot]=3;trace=trace_mix(trace,stack[sp-1]);} }
+        else if op==OP_BWRITE||op==OP_TWRITE { if !caps_allowed(CAP_BYTES,allowed){ok=false;error=146;}else{let h:Handle=handle(stack[sp-1],gens,alive);if !h.ok{ok=false;error=h.error;}else if op==OP_TWRITE&&(kinds[h.slot]!=3||!heap_utf8(heap,bases[h.slot],lens[h.slot])){ok=false;error=175;}else{let j:i64=0;let valid:bool=true;while j<lens[h.slot]&&valid{let v:i64=heap[bases[h.slot]+j];if v<0||v>255{valid=false;}j=j+1;}if !valid{ok=false;error=147;}else{emit_bytes(heap,bases[h.slot],lens[h.slot]);let k:i64=0;while k<lens[h.slot]{trace=trace_mix(trace,heap[bases[h.slot]+k]);k=k+1;}}}} }
+        else if op==OP_ISERR { if is_error(stack[sp-1]){stack[sp-1]=1;}else{stack[sp-1]=0;}trace=trace_mix(trace,stack[sp-1]); }
+        else if op==OP_ERRCODE { if !is_error(stack[sp-1]){ok=false;error=177;}else{stack[sp-1]=error_code_value(stack[sp-1]);trace=trace_mix(trace,stack[sp-1]);} }
+        else if op==OP_TRY { if is_error(stack[sp-1]){ok=false;error=2000+error_code_value(stack[sp-1]);} }
+        else if op==OP_TNOT { if stack[sp-1]==-9223372036854775807-1{ok=false;error=178;}else{stack[sp-1]=0-stack[sp-1];trace=trace_mix(trace,stack[sp-1]);} }
+        else {ok=false;error=115;}
+    }
+    if ok&&!halted{ok=false;error=117;}
+    array_free(kinds_owner);array_free(alive_owner);array_free(gens_owner);array_free(lens_owner);array_free(bases_owner);array_free(heap_owner);array_free(stack_owner);
+    return Exec{ok:ok,error:error,sp:sp,bump:bump,live:live,steps:steps,trace:trace};
+}
+fn main()->i32 {
+    if arg_count()!=4{return as(i32,2);}let code_owner:array_i64=read_arg_bytes(1);let pol_owner:array_i64=read_arg_bytes(2);let proof_owner:array_i64=array_new(12,0);let code:slice_i64=slice(code_owner,0,array_len(code_owner));let pol:slice_i64=slice(pol_owner,0,array_len(pol_owner));let proof:slice_i64=slice(proof_owner,0,array_len(proof_owner));let rc:i32=as(i32,0);if array_len(pol)!=1||pol[0]>CAP_ALL{rc=as(i32,1);}else{let r:Exec=run(code,pol[0]);if !r.ok{print_i64(r.error);rc=as(i32,1);}else{proof[0]=68;proof[1]=88;proof[2]=80;proof[3]=49;store32(proof,4,r.trace);store32(proof,8,r.steps);let w:result_i64=write_arg_bytes(3,proof);if is_err(w){rc=as(i32,1);}}}array_free(proof_owner);array_free(pol_owner);array_free(code_owner);return rc;
+}

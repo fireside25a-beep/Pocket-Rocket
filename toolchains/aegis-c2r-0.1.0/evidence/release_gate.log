@@ -1,0 +1,40 @@
+PASS 01/37  strict GCC translator build :: 67353b4adf800397
+PASS 02/37  strict Clang translator build :: strict Clang
+PASS 03/37  GCC path-sensitive analyzer :: gcc -fanalyzer
+PASS 04/37  ASan+UBSan positive/negative corpus :: 8 positive + 18 negative
+PASS 05/37  CLI identity/version :: aegis-c2r 0.1.0 profile=S0-DEFINED-I32
+PASS 06/37  positive basic.c :: OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+PASS 07/37  positive basic_whitespace.c :: OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+PASS 08/37  positive branch_loop.c :: OK profile=S0-DEFINED-I32 functions=1 statements=9 expressions=19
+PASS 09/37  positive calls.c :: OK profile=S0-DEFINED-I32 functions=3 statements=4 expressions=12
+PASS 10/37  positive logic.c :: OK profile=S0-DEFINED-I32 functions=1 statements=6 expressions=19
+PASS 11/37  positive neg_rem.c :: OK profile=S0-DEFINED-I32 functions=1 statements=5 expressions=10
+PASS 12/37  positive precedence.c :: OK profile=S0-DEFINED-I32 functions=1 statements=4 expressions=16
+PASS 13/37  positive max_literal.c :: OK profile=S0-DEFINED-I32 functions=1 statements=3 expressions=3
+PASS 14/37  canonical AST whitespace equivalence :: 7ac3a585d72b6f0b
+PASS 15/37  deterministic Rust emission :: 823a4a60fa500640
+PASS 16/37  deterministic AST emission :: 7ac3a585d72b6f0b
+PASS 17/37  deterministic proof JSON emission :: 4410e7f2212f9873
+PASS 18/37  deterministic DXL certificate emission :: 6a899895deeca92f
+PASS 19/37  deterministic DXS certificate emission :: f95a3d7e73bddee1
+PASS 20/37  deterministic DXASM certificate emission :: c84ac406e8e1e4e9
+PASS 21/37  independent source SHA-256 binding :: 928570e49fd8a40c
+PASS 22/37  independent AST SHA-256 binding :: 7ac3a585d72b6f0b
+PASS 23/37  independent Rust SHA-256 binding :: 823a4a60fa500640
+PASS 24/37  proof schema/profile/status :: AEGIS-C2R-PROOF/1
+PASS 25/37  safe-Rust markers and checked lowering :: forbid unsafe + checked arithmetic
+PASS 26/37  18-case deterministic negative corpus :: 18/18 deterministic reject
+PASS 27/37  256 deterministic source mutations :: MUTATION_PASS total=256 accepted=11 rejected=245
+PASS 28/37  512-vector corpus inventory :: 512 deterministic cases
+PASS 29/37  arithmetic vectors GCC oracle :: gcc == expected
+PASS 30/37  arithmetic vectors Clang oracle :: clang == expected
+PASS 31/37  division/remainder vectors GCC oracle :: gcc == expected
+PASS 32/37  comparison vectors Clang oracle :: clang == expected
+PASS 33/37  logic vectors GCC oracle :: gcc == expected
+PASS 34/37  logic vectors Clang oracle :: clang == expected
+PASS 35/37  output-path collision rejection :: rejected before write
+PASS 36/37  Aegis 2.4.0 C-bootstrap 11/11 gate :: 11/11 upstream clean-suite gate
+PASS 37/37  Aegis DXL/DXS/DXASM certificate consensus :: DXL=DXS=DXASM=33570824; repeat bytes exact
+
+RELEASE_GATE PASS=37 FAIL=0 TOTAL=37
+RUSTC_GATE=SKIP: rustc unavailable on validation host

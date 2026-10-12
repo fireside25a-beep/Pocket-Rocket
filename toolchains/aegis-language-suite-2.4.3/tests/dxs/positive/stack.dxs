@@ -1,0 +1,4 @@
+7 dup + print
+1 2 swap - print
+99 drop
+5 neg print

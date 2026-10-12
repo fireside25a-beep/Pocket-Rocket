@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neuroroute-inverse-ai"
+version = "0.4.2"
+description = "Exact-ternary model-page runtime with bounded recursive capability fabric"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Alex Moraru"}]
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+deepseek = [
+  "huggingface-hub>=0.30",
+  "numpy>=2.0",
+]
+dev = []
+
+[project.scripts]
+neuro-inverse = "neuro_inverse.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

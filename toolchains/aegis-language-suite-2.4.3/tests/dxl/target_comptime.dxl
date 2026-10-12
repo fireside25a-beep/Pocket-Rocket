@@ -1,0 +1,6 @@
+const IS_KNOWN: bool = TARGET_X86_64 || TARGET_AARCH64 || TARGET_WASM32;
+comptime { assert(IS_KNOWN); }
+fn answer() -> i64 {
+    if TARGET_WASM32 { return 32; } else { return 64; }
+}
+fn main() -> i32 { print_i64(answer()); return as(i32, 0); }

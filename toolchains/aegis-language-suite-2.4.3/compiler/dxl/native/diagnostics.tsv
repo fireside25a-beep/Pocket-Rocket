@@ -1,0 +1,52 @@
+code	name	message
+1001	invalid_byte	invalid source byte
+1002	unterminated_string	unterminated string literal
+1003	unterminated_comment	unterminated block comment
+1004	invalid_escape	invalid string escape
+1005	integer_overflow	integer literal exceeds i64
+1006	invalid_integer	invalid integer literal
+1007	lexer_table_capacity	lexer table capacity is insufficient
+1008	diagnostic_capacity	diagnostic capacity is exhausted
+1010	token_capacity	token capacity is exhausted
+2702	expect_entry	expected fn main or a test block
+2703	expect_main	expected the main entry name
+2704	expect_left_parenthesis	expected left parenthesis
+2705	expect_right_parenthesis	expected right parenthesis
+2706	expect_arrow	expected function return arrow
+2707	expect_i32	expected i32 return type
+2708	expect_entry_block	expected entry block
+2709	expect_right_brace	expected closing brace
+2710	expect_name	expected a name
+2711	expect_colon	expected type colon
+2712	expect_i64	expected i64 local type
+2713	expect_assignment	expected assignment operator
+2714	expect_semicolon	expected statement semicolon
+2715	duplicate_variable	duplicate local variable
+2716	unknown_variable	unknown or out-of-scope local variable
+2717	expect_expression	expected expression
+2718	expect_statement_block	expected statement block
+2719	malformed_print	malformed print_i64 call
+2720	malformed_return	return must use as(i32, expression)
+2721	unsupported_statement	statement is outside the native core profile
+2722	variable_capacity	local variable capacity exceeded
+2723	print_capacity	print call capacity exceeded
+2724	return_required	main requires a return statement
+2725	trailing_tokens	unexpected tokens after the program
+2726	table_initialization	lexer table initialization failed
+2727	lexer_failure	lexer failed without a more specific diagnostic
+2728	source_size	source exceeds 65536 bytes
+2729	type_mismatch	expression type mismatch
+2730	nesting_limit	syntax nesting limit exceeded
+2731	run_requires_main	run requires a main function
+2732	test_requires_tests	test requires one or more test blocks
+2733	return_in_test	return is not allowed in a test block
+2790	invalid_command_line	invalid command line; run dxlc --help for the accepted form
+2791	output_write	unable to write output artifact
+2792	input_read	source input is not a readable regular file
+2793	output_directory	output directory does not exist
+2794	output_is_directory	output path is a directory
+2795	output_temporary	unable to create temporary output
+2796	output_permission	unable to make output executable
+2797	diagnostic_temporary	unable to create diagnostic capture
+2801	invalid_code_length	generated code length is invalid
+2802	output_capacity	executable output buffer is too small

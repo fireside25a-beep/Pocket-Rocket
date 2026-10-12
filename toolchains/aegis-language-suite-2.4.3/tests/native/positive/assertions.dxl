@@ -1,0 +1,18 @@
+test "arithmetic" {
+    let value: i64 = 6 * 7;
+    assert(value == 42);
+}
+
+test "loop" {
+    let value: i64 = 0;
+    while value < 5 {
+        value = value + 1;
+    }
+    assert(value == 5);
+}
+
+test "short circuit" {
+    let maximum: i64 = 9223372036854775807;
+    assert(!(false && (maximum + 1 == 0)));
+    assert(true || (maximum + 1 == 0));
+}

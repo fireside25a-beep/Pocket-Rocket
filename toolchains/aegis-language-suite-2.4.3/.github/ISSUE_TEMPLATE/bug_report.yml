@@ -1,0 +1,19 @@
+name: Bug report
+description: Report a compiler, assembler, runtime, or language issue
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [DXL, DXS, DXASM, DXB3 VM, Standard library, Tooling]
+    validations: {required: true}
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations: {required: true}

@@ -1,0 +1,14 @@
+const LIMIT: i64 = 3;
+
+fn main() -> i32 {
+    let values: array_i64 = array_new(LIMIT, 0);
+    let view: slice_i64 = slice(values, 0, array_len(values));
+    let i: i64 = 0;
+    while i < LIMIT {
+        view[i] = i + 1;
+        i = i + 1;
+    }
+    print_i64(view[2]);
+    array_free(values);
+    return as(i32, 0);
+}

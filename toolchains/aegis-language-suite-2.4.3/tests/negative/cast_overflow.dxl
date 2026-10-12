@@ -1,0 +1,2 @@
+const A: i32 = as(i32, 2147483648);
+fn main() -> i32 { return as(i32, 0); }

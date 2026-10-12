@@ -1,0 +1,19 @@
+// Deterministic little-endian non-negative i63 serialization primitives.
+// Negative values are rejected by this bounded canonical profile.
+fn store_u63_le(out:slice_i64,at:i64,value:i64)->result_i64 {
+    if at<0||at+8>array_len(out)||value<0 { return err_i64(as(i32,1)); }
+    let x:i64=value; let i:i64=0;
+    while i<8 { out[at+i]=x%256; x=x/256; i=i+1; }
+    return ok_i64(at+8);
+}
+fn load_u63_le(src:slice_i64,at:i64)->result_i64 {
+    if at<0||at+8>array_len(src)||src[at+7]>127 { return err_i64(as(i32,1)); }
+    let value:i64=0; let mul:i64=1; let i:i64=0;
+    while i<8 {
+        if src[at+i]<0||src[at+i]>255 { return err_i64(as(i32,2)); }
+        value=value+src[at+i]*mul;
+        if i<7 { mul=mul*256; }
+        i=i+1;
+    }
+    return ok_i64(value);
+}

@@ -1,0 +1,38 @@
+import "../../../compiler/dxl/selfhost/parser/span_arena.dxl";
+import "../../../compiler/dxl/selfhost/parser/arenas.dxl";
+
+fn main()->i32 {
+    let type_kind_owner:array_i64=array_new(1,0); let type_ns_owner:array_i64=array_new(1,0);
+    let type_nl_owner:array_i64=array_new(1,0); let type_as_owner:array_i64=array_new(1,0);
+    let type_ac_owner:array_i64=array_new(1,0); let type_own_owner:array_i64=array_new(1,0);
+    let type_kinds:slice_i64=slice(type_kind_owner,0,1); let type_ns:slice_i64=slice(type_ns_owner,0,1);
+    let type_nl:slice_i64=slice(type_nl_owner,0,1); let type_as:slice_i64=slice(type_as_owner,0,1);
+    let type_ac:slice_i64=slice(type_ac_owner,0,1); let type_owns:slice_i64=slice(type_own_owner,0,1);
+    let first_type:result_i64=type_put(type_kinds,type_ns,type_nl,type_as,type_ac,type_owns,0,TYPE_I64,0,0,0,0,OWN_PLAIN);
+    let full_type:result_i64=type_put(type_kinds,type_ns,type_nl,type_as,type_ac,type_owns,1,TYPE_I32,0,0,0,0,OWN_PLAIN);
+    assert(!is_err(first_type)); assert(is_err(full_type)); assert(error_code(full_type)==as(i32,3201));
+
+    let ast_kind_owner:array_i64=array_new(1,0); let ast_parent_owner:array_i64=array_new(1,0);
+    let ast_span_owner:array_i64=array_new(1,0); let ast_type_owner:array_i64=array_new(1,0);
+    let ast_kinds:slice_i64=slice(ast_kind_owner,0,1); let ast_parents:slice_i64=slice(ast_parent_owner,0,1);
+    let ast_spans:slice_i64=slice(ast_span_owner,0,1); let ast_types:slice_i64=slice(ast_type_owner,0,1);
+    let first_ast:result_i64=ast_put(ast_kinds,ast_parents,ast_spans,ast_types,0,AST_PROGRAM,-1,0,-1);
+    let full_ast:result_i64=ast_put(ast_kinds,ast_parents,ast_spans,ast_types,1,AST_ERROR,0,0,-1);
+    assert(!is_err(first_ast)); assert(is_err(full_ast)); assert(error_code(full_ast)==as(i32,3101));
+
+    let sf_owner:array_i64=array_new(1,0); let ss_owner:array_i64=array_new(1,0); let se_owner:array_i64=array_new(1,0);
+    let sl_owner:array_i64=array_new(1,0); let sc_owner:array_i64=array_new(1,0); let el_owner:array_i64=array_new(1,0); let ec_owner:array_i64=array_new(1,0);
+    let sf:slice_i64=slice(sf_owner,0,1); let ss:slice_i64=slice(ss_owner,0,1); let se:slice_i64=slice(se_owner,0,1);
+    let sl:slice_i64=slice(sl_owner,0,1); let sc:slice_i64=slice(sc_owner,0,1); let el:slice_i64=slice(el_owner,0,1); let ec:slice_i64=slice(ec_owner,0,1);
+    let bad_span:result_i64=span_put(sf,ss,se,sl,sc,el,ec,0,0,9,4,1,1,1,2);
+    assert(is_err(bad_span)); assert(error_code(bad_span)==as(i32,3005));
+
+    print_i32(error_code(full_type)); print_i32(error_code(full_ast)); print_i32(error_code(bad_span));
+
+    array_free(ec_owner); array_free(el_owner); array_free(sc_owner); array_free(sl_owner);
+    array_free(se_owner); array_free(ss_owner); array_free(sf_owner);
+    array_free(ast_type_owner); array_free(ast_span_owner); array_free(ast_parent_owner); array_free(ast_kind_owner);
+    array_free(type_own_owner); array_free(type_ac_owner); array_free(type_as_owner);
+    array_free(type_nl_owner); array_free(type_ns_owner); array_free(type_kind_owner);
+    return as(i32,0);
+}

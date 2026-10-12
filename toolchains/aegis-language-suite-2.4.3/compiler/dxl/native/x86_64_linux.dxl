@@ -1,0 +1,248 @@
+import "byte_writer.dxl";
+
+fn native_x64_prologue(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,85); // push rbp
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,229); // mov rbp,rsp
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,129);
+    // 512 bytes for 64 slots plus eight bytes to align the stack at calls.
+    cursor=native_put_u8(out,cursor,236); cursor=native_put_u32(out,cursor,520);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,199);
+    // The guard decrements before evaluating a loop condition. Starting one
+    // above the public limit permits exactly 1,000,000 header evaluations and
+    // traps before evaluation 1,000,001.
+    cursor=native_put_u8(out,cursor,196); cursor=native_put_u32(out,cursor,1000001);
+    return cursor;
+}
+
+fn native_x64_literal(out: slice_i64, at: i64, value: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,184);
+    cursor=native_put_i64(out,cursor,value); // mov rax,imm64
+    return cursor;
+}
+
+fn native_x64_load(out: slice_i64, at: i64, slot: i64) -> i64 {
+    assert(slot >= 0 && slot < 64);
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,139);
+    cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_i32(out,cursor,-((slot+1)*8));
+    return cursor;
+}
+
+fn native_x64_store(out: slice_i64, at: i64, slot: i64) -> i64 {
+    assert(slot >= 0 && slot < 64);
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_i32(out,cursor,-((slot+1)*8));
+    return cursor;
+}
+
+fn native_x64_push_rax(out: slice_i64, at: i64) -> i64 {
+    return native_put_u8(out,at,80);
+}
+
+// Move the right operand from RAX to RCX and restore the left operand to RAX.
+fn native_x64_binary_operands(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,193); // mov rcx,rax
+    cursor=native_put_u8(out,cursor,88);  // pop rax
+    return cursor;
+}
+
+// DXL integer arithmetic is checked.  JNO skips a deterministic exit(70)
+// sequence; an overflow falls through to that sequence and cannot continue
+// with a wrapped value.
+fn native_x64_overflow_guard(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    cursor=native_put_u8(out,cursor,113); // jno +12
+    cursor=native_put_u8(out,cursor,12);
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,70);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}
+
+fn native_x64_add(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,1);
+    cursor=native_put_u8(out,cursor,200); // add rax,rcx
+    cursor=native_x64_overflow_guard(out,cursor);
+    return cursor;
+}
+
+fn native_x64_sub(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,41);
+    cursor=native_put_u8(out,cursor,200); // sub rax,rcx
+    cursor=native_x64_overflow_guard(out,cursor);
+    return cursor;
+}
+
+fn native_x64_mul(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,15);
+    cursor=native_put_u8(out,cursor,175); cursor=native_put_u8(out,cursor,193);
+    cursor=native_x64_overflow_guard(out,cursor);
+    return cursor; // imul rax,rcx
+}
+
+fn native_x64_and(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,33);
+    cursor=native_put_u8(out,cursor,200);
+    return cursor;
+}
+
+fn native_x64_or(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,9);
+    cursor=native_put_u8(out,cursor,200);
+    return cursor;
+}
+
+fn native_x64_neg(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,247);
+    cursor=native_put_u8(out,cursor,216);
+    cursor=native_x64_overflow_guard(out,cursor);
+    return cursor;
+}
+
+fn native_x64_bool_not(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192); // test rax,rax
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,148);
+    cursor=native_put_u8(out,cursor,192); // sete al
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,15);
+    cursor=native_put_u8(out,cursor,182); cursor=native_put_u8(out,cursor,192);
+    return cursor;
+}
+
+// Set RAX to a canonical boolean after comparing left RAX with right RCX.
+fn native_x64_compare(out: slice_i64, at: i64, set_opcode: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,57);
+    cursor=native_put_u8(out,cursor,200); // cmp rax,rcx
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,set_opcode);
+    cursor=native_put_u8(out,cursor,192);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,15);
+    cursor=native_put_u8(out,cursor,182); cursor=native_put_u8(out,cursor,192);
+    return cursor;
+}
+
+fn native_x64_jump_if_zero(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,132);
+    cursor=native_put_i32(out,cursor,0);
+    return cursor;
+}
+
+fn native_x64_jump_if_nonzero(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_i32(out,cursor,0);
+    return cursor;
+}
+
+fn native_x64_assert(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192); // test rax,rax
+    cursor=native_put_u8(out,cursor,117); cursor=native_put_u8(out,cursor,12); // jne +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,71);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}
+
+fn native_x64_check_i32_cast(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    // Reject RAX > INT32_MAX.
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,185);
+    cursor=native_put_i64(out,cursor,2147483647);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,57);
+    cursor=native_put_u8(out,cursor,200);
+    cursor=native_put_u8(out,cursor,126); cursor=native_put_u8(out,cursor,12); // jle +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,70);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+
+    // Reject RAX < INT32_MIN.
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,185);
+    cursor=native_put_i64(out,cursor,-2147483648);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,57);
+    cursor=native_put_u8(out,cursor,200);
+    cursor=native_put_u8(out,cursor,125); cursor=native_put_u8(out,cursor,12); // jge +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,70);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}
+
+// Keep generated-program return values in 0..63 so the reserved runtime
+// statuses 70..73 identify compiler-inserted failures unambiguously.
+fn native_x64_check_exit_status(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,131);
+    cursor=native_put_u8(out,cursor,248); cursor=native_put_u8(out,cursor,0); // cmp rax,0
+    cursor=native_put_u8(out,cursor,125); cursor=native_put_u8(out,cursor,12); // jge +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,73);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,131);
+    cursor=native_put_u8(out,cursor,248); cursor=native_put_u8(out,cursor,63); // cmp rax,63
+    cursor=native_put_u8(out,cursor,126); cursor=native_put_u8(out,cursor,12); // jle +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,73);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}
+
+// All loops in one program share a deterministic one-million-evaluation fuel
+// counter in R12. Exactly 1,000,000 header evaluations are permitted; the next
+// attempted evaluation exits with status 72 rather than running forever.
+fn native_x64_loop_fuel(out: slice_i64, at: i64) -> i64 {
+    let cursor:i64=at;
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,255);
+    cursor=native_put_u8(out,cursor,204); // dec r12
+    cursor=native_put_u8(out,cursor,117); cursor=native_put_u8(out,cursor,12); // jne +12
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,72);
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}
+
+fn native_x64_jump(out: slice_i64, at: i64, target: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,233);
+    let patch: i64 = cursor;
+    cursor=native_put_i32(out,cursor,target-(patch+4));
+    return cursor;
+}
+
+fn native_x64_call_placeholder(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,232);
+    cursor=native_put_i32(out,cursor,0);
+    return cursor;
+}
+
+fn native_x64_exit(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,199); // mov rdi,rax
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,60);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    return cursor;
+}

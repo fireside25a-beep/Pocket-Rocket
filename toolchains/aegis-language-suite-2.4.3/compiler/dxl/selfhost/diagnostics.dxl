@@ -1,0 +1,33 @@
+import "codes.dxl";
+
+// Diagnostics are stored in parallel slices so the restricted compiler profile does not
+// need arrays of structures. Every record has a stable code and exact span.
+fn diagnostic_push(
+    state: slice_i64,
+    codes: slice_i64,
+    starts: slice_i64,
+    ends: slice_i64,
+    lines: slice_i64,
+    columns: slice_i64,
+    files: slice_i64,
+    code: i64,
+    start: i64,
+    finish: i64,
+    line: i64,
+    column: i64,
+    file: i64
+) -> bool {
+    let at: i64 = state[LS_DIAG_COUNT];
+    if at >= array_len(codes) || at >= array_len(starts) || at >= array_len(ends) || at >= array_len(lines) || at >= array_len(columns) || at >= array_len(files) {
+        state[LS_FATAL]=LX_E_DIAGNOSTIC_CAPACITY;
+        return false;
+    }
+    codes[at]=code;
+    starts[at]=start;
+    ends[at]=finish;
+    lines[at]=line;
+    columns[at]=column;
+    files[at]=file;
+    state[LS_DIAG_COUNT]=at+1;
+    return true;
+}

@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND="$BIN_DIR/../libexec/dxlc-front"
+NATIVE="$BIN_DIR/../libexec/dxlc-native"
+NATIVE_DIAGNOSTICS="$BIN_DIR/../libexec/dxlc-native-diagnostics.tsv"
+
+run_frontend() {
+  local stdout_file stderr_file status
+  if [[ ! -x "$FRONTEND" ]]; then
+    printf 'dxlc: bundled compatibility frontend is missing\n' >&2
+    return 69
+  fi
+  stdout_file="$(mktemp)"
+  stderr_file="$(mktemp)"
+
+  set +e
+  "$FRONTEND" "$@" >"$stdout_file" 2>"$stderr_file"
+  status=$?
+  set -e
+
+  sed -E 's/ in 0\.2([[:punct:]]|$)/ in the 2.4.3 profile\1/g' "$stdout_file"
+  sed -E 's/ in 0\.2([[:punct:]]|$)/ in the 2.4.3 profile\1/g' "$stderr_file" >&2
+  rm -f "$stdout_file" "$stderr_file"
+  return "$status"
+}
+
+native_message() {
+  local message=''
+  if [[ -f "$NATIVE_DIAGNOSTICS" ]]; then
+    message="$(awk -F '\t' -v code="$1" 'NR > 1 && $1 == code { print $3; exit }' "$NATIVE_DIAGNOSTICS")"
+  fi
+  if [[ -n "$message" ]]; then printf '%s' "$message"; else printf 'native compiler failure'; fi
+}
+
+run_native_compiler() {
+  local input="$1" output="$2" mode_file="${3:-}" diagnostic status code output_directory output_name temporary input_size
+  if [[ ! -x "$NATIVE" ]]; then
+    printf 'dxlc: bundled DXL-native compiler is missing\n' >&2
+    return 69
+  fi
+  if [[ ! -f "$input" || ! -r "$input" ]]; then
+    printf 'AEG2792: %s\n' "$(native_message 2792)" >&2
+    return 1
+  fi
+  if ! input_size="$(stat -c '%s' -- "$input" 2>/dev/null)"; then
+    printf 'AEG2792: %s\n' "$(native_message 2792)" >&2
+    return 1
+  fi
+  if [[ "$input_size" -gt 65536 ]]; then
+    printf 'AEG2728: %s\n' "$(native_message 2728)" >&2
+    return 1
+  fi
+  if [[ -d "$output" ]]; then
+    printf 'AEG2794: %s\n' "$(native_message 2794)" >&2
+    return 1
+  fi
+
+  if ! diagnostic="$(mktemp)"; then
+    printf 'AEG2797: %s\n' "$(native_message 2797)" >&2
+    return 1
+  fi
+  output_directory="$(dirname -- "$output")"
+  output_name="$(basename -- "$output")"
+  if [[ ! -d "$output_directory" ]]; then
+    rm -f "$diagnostic"
+    printf 'AEG2793: %s\n' "$(native_message 2793)" >&2
+    return 1
+  fi
+  if ! temporary="$(mktemp "$output_directory/.${output_name}.aegis.XXXXXX")"; then
+    rm -f "$diagnostic"
+    printf 'AEG2795: %s\n' "$(native_message 2795)" >&2
+    return 1
+  fi
+  set +e
+  if [[ -n "$mode_file" ]]; then
+    "$NATIVE" "$input" "$temporary" "$mode_file" >"$diagnostic" 2>&1
+  else
+    "$NATIVE" "$input" "$temporary" >"$diagnostic" 2>&1
+  fi
+  status=$?
+  set -e
+
+  if [[ "$status" -ne 0 ]]; then
+    code="$(tr -d '\r\n' <"$diagnostic")"
+    rm -f "$temporary"
+    if [[ "$code" =~ ^[0-9]+$ ]]; then
+      printf 'AEG%s: %s\n' "$code" "$(native_message "$code")" >&2
+    else
+      cat "$diagnostic" >&2
+    fi
+  else
+    if ! chmod 0755 "$temporary"; then
+      rm -f "$temporary" "$diagnostic"
+      printf 'AEG2796: %s\n' "$(native_message 2796)" >&2
+      return 1
+    fi
+    if ! mv -f -- "$temporary" "$output"; then
+      rm -f "$temporary" "$diagnostic"
+      printf 'AEG2791: %s\n' "$(native_message 2791)" >&2
+      return 1
+    fi
+  fi
+  rm -f "$diagnostic"
+  return "$status"
+}
+
+parse_native_request() {
+  local require_output="$1" target_seen=0
+  shift
+  NATIVE_INPUT=''
+  NATIVE_OUTPUT=''
+  NATIVE_TARGET='native'
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -o)
+        [[ $# -ge 2 && -z "$NATIVE_OUTPUT" ]] || return 1
+        NATIVE_OUTPUT="$2"
+        shift 2
+        ;;
+      --target)
+        [[ $# -ge 2 && "$target_seen" -eq 0 ]] || return 1
+        target_seen=1
+        NATIVE_TARGET="$2"
+        shift 2
+        ;;
+      -*) return 1 ;;
+      *)
+        [[ -z "$NATIVE_INPUT" ]] || return 1
+        NATIVE_INPUT="$1"
+        shift
+        ;;
+    esac
+  done
+
+  [[ -n "$NATIVE_INPUT" ]] || return 1
+  if [[ "$require_output" == yes && -z "$NATIVE_OUTPUT" ]]; then return 1; fi
+  if [[ "$require_output" == no && -n "$NATIVE_OUTPUT" ]]; then return 1; fi
+  case "$NATIVE_TARGET" in native|x86_64-linux) ;; *) return 2 ;; esac
+}
+
+native_usage_error() {
+  printf 'AEG2790: %s\n' "$(native_message 2790)" >&2
+  exit 64
+}
+
+parse_check_request() {
+  CHECK_INPUT=''
+  CHECK_TARGET=''
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --target)
+        [[ $# -ge 2 && -z "$CHECK_TARGET" ]] || return 1
+        case "$2" in native|x86_64-linux) ;; *) return 1 ;; esac
+        CHECK_TARGET="$2"
+        shift 2
+        ;;
+      -*) return 1 ;;
+      *)
+        [[ -z "$CHECK_INPUT" ]] || return 1
+        CHECK_INPUT="$1"
+        shift
+        ;;
+    esac
+  done
+  [[ -n "$CHECK_INPUT" ]]
+}
+
+parse_tir_request() {
+  TIR_INPUT=''
+  TIR_OUTPUT=''
+  TIR_TARGET=''
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -o)
+        [[ $# -ge 2 && -z "$TIR_OUTPUT" ]] || return 1
+        TIR_OUTPUT="$2"
+        shift 2
+        ;;
+      --target)
+        [[ $# -ge 2 && -z "$TIR_TARGET" ]] || return 1
+        case "$2" in native|x86_64-linux) ;; *) return 1 ;; esac
+        TIR_TARGET="$2"
+        shift 2
+        ;;
+      -*) return 1 ;;
+      *)
+        [[ -z "$TIR_INPUT" ]] || return 1
+        TIR_INPUT="$1"
+        shift
+        ;;
+    esac
+  done
+  [[ -n "$TIR_INPUT" && -n "$TIR_OUTPUT" ]]
+}
+
+parse_fmt_request() {
+  FMT_INPUT=''
+  FMT_CHECK=no
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --check)
+        [[ "$FMT_CHECK" == no ]] || return 1
+        FMT_CHECK=yes
+        shift
+        ;;
+      -*) return 1 ;;
+      *)
+        [[ -z "$FMT_INPUT" ]] || return 1
+        FMT_INPUT="$1"
+        shift
+        ;;
+    esac
+  done
+  [[ -n "$FMT_INPUT" ]]
+}
+
+normalize_tir_header() {
+  local output="$1" first target temporary
+  [[ -f "$output" ]] || {
+    printf 'dxlc: typed-IR output was not created\n' >&2
+    return 74
+  }
+
+  IFS= read -r first <"$output" || true
+  case "$first" in
+    'aegis-tir '*' target '*) target="${first##* target }" ;;
+    *)
+      printf 'dxlc: unrecognized typed-IR header\n' >&2
+      return 65
+      ;;
+  esac
+
+  temporary="${output}.aegis.$$"
+  {
+    printf 'aegis-tir 2.4.3 target %s\n' "$target"
+    tail -n +2 "$output"
+  } >"$temporary"
+  chmod --reference="$output" "$temporary"
+  mv "$temporary" "$output"
+}
+
+if [[ $# -eq 0 || ( $# -eq 1 && ( "${1:-}" == '--help' || "${1:-}" == '-h' ) ) ]]; then
+  cat <<'USAGE'
+Aegis DXL compiler 2.4.3
+
+Supported standalone commands:
+  dxlc check FILE [--target native|x86_64-linux]
+  dxlc build FILE -o OUTPUT [--target native|x86_64-linux]
+  dxlc run FILE [--target native|x86_64-linux]
+  dxlc test FILE [--target native|x86_64-linux]
+  dxlc emit-tir FILE -o OUTPUT [--target native|x86_64-linux]
+  dxlc fmt FILE [--check]
+  dxlc targets
+  dxlc version
+USAGE
+  exit 0
+fi
+
+case "$1" in
+  check)
+    parse_check_request "${@:2}" || native_usage_error
+    frontend_arguments=(check "$CHECK_INPUT")
+    if [[ -n "$CHECK_TARGET" ]]; then frontend_arguments+=(--target "$CHECK_TARGET"); fi
+    run_frontend "${frontend_arguments[@]}"
+    ;;
+  fmt)
+    parse_fmt_request "${@:2}" || native_usage_error
+    frontend_arguments=(fmt "$FMT_INPUT")
+    if [[ "$FMT_CHECK" == yes ]]; then frontend_arguments+=(--check); fi
+    run_frontend "${frontend_arguments[@]}"
+    ;;
+  build)
+    parse_status=0
+    parse_native_request yes "${@:2}" || parse_status=$?
+    [[ "$parse_status" -eq 0 ]] || native_usage_error
+    run_native_compiler "$NATIVE_INPUT" "$NATIVE_OUTPUT"
+    ;;
+  run|test)
+    command="$1"
+    parse_status=0
+    parse_native_request no "${@:2}" || parse_status=$?
+    [[ "$parse_status" -eq 0 ]] || native_usage_error
+    temporary_directory="$(mktemp -d)"
+    trap 'rm -rf "$temporary_directory"' EXIT HUP INT TERM
+    if [[ "$command" == run ]]; then printf 'm' >"$temporary_directory/mode"; else printf 't' >"$temporary_directory/mode"; fi
+    run_native_compiler "$NATIVE_INPUT" "$temporary_directory/program" "$temporary_directory/mode"
+    "$temporary_directory/program"
+    ;;
+  emit-tir)
+    parse_tir_request "${@:2}" || native_usage_error
+    frontend_arguments=(emit-tir "$TIR_INPUT" -o "$TIR_OUTPUT")
+    if [[ -n "$TIR_TARGET" ]]; then frontend_arguments+=(--target "$TIR_TARGET"); fi
+    run_frontend "${frontend_arguments[@]}"
+    normalize_tir_header "$TIR_OUTPUT"
+    ;;
+  targets)
+    [[ $# -eq 1 ]] || native_usage_error
+    printf 'native -> x86_64-unknown-linux-gnu\n'
+    printf 'x86_64-linux -> x86_64-unknown-linux-gnu\n'
+    ;;
+  version)
+    [[ $# -eq 1 ]] || native_usage_error
+    printf 'dxlc 2.4.3\n'
+    ;;
+  *)
+    native_usage_error
+    ;;
+esac

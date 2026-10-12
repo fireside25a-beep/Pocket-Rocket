@@ -1,0 +1,126 @@
+import "../../../compiler/dxl/selfhost/parser/parser.dxl";
+
+struct FixtureReport {
+    finished: bool,
+    clean: bool,
+    containment: bool,
+    ast_count: i64,
+    type_count: i64,
+    diag_count: i64,
+    progress_failures: i64,
+    first_code: i64,
+    second_code: i64,
+    third_code: i64,
+    ast_digest: i64,
+}
+
+fn run_parser_fixture(kinds:slice_i64,token_count:i64)->FixtureReport {
+    let token_span_owner:array_i64=array_new(token_count,0);
+    let token_spans:slice_i64=slice(token_span_owner,0,array_len(token_span_owner));
+
+    let span_capacity:i64=128;
+    let span_file_owner:array_i64=array_new(span_capacity,0);
+    let span_start_owner:array_i64=array_new(span_capacity,0);
+    let span_end_owner:array_i64=array_new(span_capacity,0);
+    let span_sl_owner:array_i64=array_new(span_capacity,0);
+    let span_sc_owner:array_i64=array_new(span_capacity,0);
+    let span_el_owner:array_i64=array_new(span_capacity,0);
+    let span_ec_owner:array_i64=array_new(span_capacity,0);
+    let span_files:slice_i64=slice(span_file_owner,0,array_len(span_file_owner));
+    let span_starts:slice_i64=slice(span_start_owner,0,array_len(span_start_owner));
+    let span_ends:slice_i64=slice(span_end_owner,0,array_len(span_end_owner));
+    let span_sls:slice_i64=slice(span_sl_owner,0,array_len(span_sl_owner));
+    let span_scs:slice_i64=slice(span_sc_owner,0,array_len(span_sc_owner));
+    let span_els:slice_i64=slice(span_el_owner,0,array_len(span_el_owner));
+    let span_ecs:slice_i64=slice(span_ec_owner,0,array_len(span_ec_owner));
+
+    let ast_capacity:i64=64;
+    let ast_kind_owner:array_i64=array_new(ast_capacity,0);
+    let ast_parent_owner:array_i64=array_new(ast_capacity,0);
+    let ast_span_owner:array_i64=array_new(ast_capacity,0);
+    let ast_type_owner:array_i64=array_new(ast_capacity,0);
+    let ast_kinds:slice_i64=slice(ast_kind_owner,0,array_len(ast_kind_owner));
+    let ast_parents:slice_i64=slice(ast_parent_owner,0,array_len(ast_parent_owner));
+    let ast_spans:slice_i64=slice(ast_span_owner,0,array_len(ast_span_owner));
+    let ast_types:slice_i64=slice(ast_type_owner,0,array_len(ast_type_owner));
+
+    let type_capacity:i64=16;
+    let type_kind_owner:array_i64=array_new(type_capacity,0);
+    let type_ns_owner:array_i64=array_new(type_capacity,0);
+    let type_nl_owner:array_i64=array_new(type_capacity,0);
+    let type_as_owner:array_i64=array_new(type_capacity,0);
+    let type_ac_owner:array_i64=array_new(type_capacity,0);
+    let type_own_owner:array_i64=array_new(type_capacity,0);
+    let type_kinds:slice_i64=slice(type_kind_owner,0,array_len(type_kind_owner));
+    let type_name_starts:slice_i64=slice(type_ns_owner,0,array_len(type_ns_owner));
+    let type_name_lengths:slice_i64=slice(type_nl_owner,0,array_len(type_nl_owner));
+    let type_arg_starts:slice_i64=slice(type_as_owner,0,array_len(type_as_owner));
+    let type_arg_counts:slice_i64=slice(type_ac_owner,0,array_len(type_ac_owner));
+    let type_ownership:slice_i64=slice(type_own_owner,0,array_len(type_own_owner));
+
+    let diag_capacity:i64=32;
+    let diag_code_owner:array_i64=array_new(diag_capacity,0);
+    let diag_span_owner:array_i64=array_new(diag_capacity,0);
+    let diag_context_owner:array_i64=array_new(diag_capacity,0);
+    let diag_codes:slice_i64=slice(diag_code_owner,0,array_len(diag_code_owner));
+    let diag_spans:slice_i64=slice(diag_span_owner,0,array_len(diag_span_owner));
+    let diag_contexts:slice_i64=slice(diag_context_owner,0,array_len(diag_context_owner));
+
+    let span_count:i64=0;
+    let i:i64=0;
+    while i<token_count {
+        let stored:result_i64=span_put(span_files,span_starts,span_ends,span_sls,span_scs,span_els,span_ecs,
+            span_count,0,i,i+1,1,i+1,1,i+2);
+        assert(!is_err(stored));
+        token_spans[i]=unwrap_i64(stored);
+        span_count=span_count+1;
+        i=i+1;
+    }
+
+    let type_count:i64=0;
+    let added_type:result_i64=type_put(type_kinds,type_name_starts,type_name_lengths,type_arg_starts,type_arg_counts,type_ownership,
+        type_count,TYPE_INVALID,0,0,0,0,OWN_PLAIN);
+    assert(!is_err(added_type)); type_count=type_count+1;
+    added_type=type_put(type_kinds,type_name_starts,type_name_lengths,type_arg_starts,type_arg_counts,type_ownership,
+        type_count,TYPE_I64,0,0,0,0,OWN_PLAIN);
+    assert(!is_err(added_type)); type_count=type_count+1;
+
+    let parsed:ParseReport=parse_token_stream(
+        kinds,token_spans,token_count,
+        span_files,span_starts,span_ends,span_sls,span_scs,span_els,span_ecs,span_count,
+        ast_kinds,ast_parents,ast_spans,ast_types,0,type_count,
+        diag_codes,diag_spans,diag_contexts,0);
+
+    let containment:bool=true;
+    let ast_digest:i64=0;
+    i=0;
+    while i<parsed.ast_count {
+        ast_digest=ast_digest*31+ast_kinds[i];
+        if ast_parents[i]>=0 {
+            if !span_contains_ids(span_files,span_starts,span_ends,span_sls,span_scs,span_els,span_ecs,
+                parsed.span_count,ast_spans[ast_parents[i]],ast_spans[i]) { containment=false; }
+        }
+        i=i+1;
+    }
+
+    let first_code:i64=0; let second_code:i64=0; let third_code:i64=0;
+    if parsed.diag_count>0 { first_code=diag_codes[0]; }
+    if parsed.diag_count>1 { second_code=diag_codes[1]; }
+    if parsed.diag_count>2 { third_code=diag_codes[2]; }
+
+    let result:FixtureReport=FixtureReport{
+        finished:parsed.finished,clean:parsed.clean,containment:containment,
+        ast_count:parsed.ast_count,type_count:parsed.type_count,diag_count:parsed.diag_count,
+        progress_failures:parsed.progress_failures,first_code:first_code,second_code:second_code,
+        third_code:third_code,ast_digest:ast_digest
+    };
+
+    array_free(diag_context_owner); array_free(diag_span_owner); array_free(diag_code_owner);
+    array_free(type_own_owner); array_free(type_ac_owner); array_free(type_as_owner);
+    array_free(type_nl_owner); array_free(type_ns_owner); array_free(type_kind_owner);
+    array_free(ast_type_owner); array_free(ast_span_owner); array_free(ast_parent_owner); array_free(ast_kind_owner);
+    array_free(span_ec_owner); array_free(span_el_owner); array_free(span_sc_owner); array_free(span_sl_owner);
+    array_free(span_end_owner); array_free(span_start_owner); array_free(span_file_owner);
+    array_free(token_span_owner);
+    return result;
+}

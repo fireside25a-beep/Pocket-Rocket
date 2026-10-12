@@ -1,0 +1,284 @@
+fn main() -> i32 {
+    if true {
+        if true {
+            if true {
+                if true {
+                    if true {
+                        if true {
+                            if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+                                if true {
+        assert(true);
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return as(i32, 0);
+}

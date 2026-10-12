@@ -1,0 +1,49 @@
+import "semantic.dxl";
+
+fn full_tir_opcode(ast_kind:i64)->i64 {
+    if ast_kind==FULL_AST_IMPORT { return FULL_TIR_IMPORT; }
+    if ast_kind==FULL_AST_CONST { return FULL_TIR_CONST; }
+    if ast_kind==FULL_AST_FUNCTION { return FULL_TIR_FUNCTION; }
+    if ast_kind==FULL_AST_PARAM { return FULL_TIR_PARAM; }
+    if ast_kind==FULL_AST_LET { return FULL_TIR_LET; }
+    if ast_kind==FULL_AST_ASSIGN { return FULL_TIR_ASSIGN; }
+    if ast_kind==FULL_AST_RETURN { return FULL_TIR_RETURN; }
+    if ast_kind==FULL_AST_ASSERT { return FULL_TIR_ASSERT; }
+    if ast_kind==FULL_AST_WHILE { return FULL_TIR_WHILE; }
+    if ast_kind==FULL_AST_IF { return FULL_TIR_IF; }
+    if ast_kind==FULL_AST_INT||ast_kind==FULL_AST_BOOL { return FULL_TIR_LITERAL; }
+    if ast_kind==FULL_AST_NAME { return FULL_TIR_NAME; }
+    if ast_kind==FULL_AST_CALL { return FULL_TIR_CALL; }
+    if ast_kind==FULL_AST_CAST { return FULL_TIR_CAST; }
+    if ast_kind==FULL_AST_NEGATE||ast_kind==FULL_AST_NOT { return FULL_TIR_UNARY; }
+    if ast_kind>=FULL_AST_ADD&&ast_kind<=FULL_AST_OR { return FULL_TIR_BINARY; }
+    if ast_kind==FULL_AST_INDEX||ast_kind==FULL_AST_FIELD_ACCESS||ast_kind==FULL_AST_STRUCT_LITERAL||ast_kind==FULL_AST_FIELD_VALUE { return FULL_TIR_NAME; }
+    return 0;
+}
+
+fn full_lower_tir(
+    state:slice_i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_types:slice_i64,ast_values:slice_i64,ast_scopes:slice_i64,ast_count:i64,
+    tir_ops:slice_i64,tir_nodes:slice_i64,tir_types:slice_i64,tir_values:slice_i64,tir_parents:slice_i64,tir_scopes:slice_i64
+)->FullLowerReport {
+    let count:i64=0;
+    let digest:i64=17;
+    let i:i64=0;
+    while i<ast_count&&state[FULL_STATE_FATAL]==0 {
+        let op:i64=full_tir_opcode(ast_kinds[i]);
+        if op!=0 {
+            if count>=array_len(tir_ops)||count>=array_len(tir_nodes)||count>=array_len(tir_types)||count>=array_len(tir_values)||count>=array_len(tir_parents)||count>=array_len(tir_scopes) {
+                state[FULL_STATE_FATAL]=FULL_E_TIR_CAPACITY;
+            } else {
+                tir_ops[count]=op;tir_nodes[count]=i;tir_types[count]=ast_types[i];
+                tir_values[count]=ast_values[i];tir_parents[count]=ast_parents[i];tir_scopes[count]=ast_scopes[i];
+                let bounded_value:i64=ast_values[i]%2147483647;
+                digest=(digest*131+op*17+i*13+ast_types[i]*7+bounded_value+ast_parents[i]*3+ast_scopes[i])%2147483647;
+                if digest<0 { digest=0-digest; }
+                count=count+1;
+            }
+        }
+        i=i+1;
+    }
+    return FullLowerReport{clean:state[FULL_STATE_FATAL]==0,instruction_count:count,digest:digest};
+}

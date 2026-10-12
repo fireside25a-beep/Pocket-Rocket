@@ -1,0 +1,4 @@
+# comments and whitespace
+  40   2 +  # forty-two
+print
+halt

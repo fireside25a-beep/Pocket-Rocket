@@ -1,0 +1,88 @@
+import "../../compiler/dxl/native/byte_writer.dxl";
+
+// Append the Linux x86-64 print_i64 runtime routine.  The routine accepts the
+// signed value in RAX, formats it into a stack buffer, and writes one line to
+// standard output using the kernel write interface.  It has no dynamic-loader or
+// external-library dependency.
+fn native_runtime_emit_print_i64(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+
+    // sub rsp,40; r8=rsp+39; *r8='\n'; r9=1; r10=0
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,131);
+    cursor=native_put_u8(out,cursor,236); cursor=native_put_u8(out,cursor,40);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,224);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,131);
+    cursor=native_put_u8(out,cursor,192); cursor=native_put_u8(out,cursor,39);
+    cursor=native_put_u8(out,cursor,65); cursor=native_put_u8(out,cursor,198);
+    cursor=native_put_u8(out,cursor,0); cursor=native_put_u8(out,cursor,10);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,199);
+    cursor=native_put_u8(out,cursor,193); cursor=native_put_u32(out,cursor,1);
+    cursor=native_put_u8(out,cursor,69); cursor=native_put_u8(out,cursor,49);
+    cursor=native_put_u8(out,cursor,210);
+
+    // test rax,rax; jge magnitude_ready
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,141);
+    let nonnegative_patch: i64 = cursor; cursor=native_put_i32(out,cursor,0);
+
+    // r10b=1; neg rax.  Negating INT64_MIN intentionally leaves its unsigned
+    // magnitude bit pattern, which the unsigned division below handles.
+    cursor=native_put_u8(out,cursor,65); cursor=native_put_u8(out,cursor,178);
+    cursor=native_put_u8(out,cursor,1);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,247);
+    cursor=native_put_u8(out,cursor,216);
+    let magnitude_ready: i64 = cursor;
+    native_patch_i32(out,nonnegative_patch,magnitude_ready-(nonnegative_patch+4));
+
+    // r11=10
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,199);
+    cursor=native_put_u8(out,cursor,195); cursor=native_put_u32(out,cursor,10);
+
+    // do { rdx=0; rax/=10; emit remainder digit backwards; } while (rax)
+    let digit_loop: i64 = cursor;
+    cursor=native_put_u8(out,cursor,49); cursor=native_put_u8(out,cursor,210);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,247);
+    cursor=native_put_u8(out,cursor,243);
+    cursor=native_put_u8(out,cursor,128); cursor=native_put_u8(out,cursor,194);
+    cursor=native_put_u8(out,cursor,48);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,255);
+    cursor=native_put_u8(out,cursor,200);
+    cursor=native_put_u8(out,cursor,65); cursor=native_put_u8(out,cursor,136);
+    cursor=native_put_u8(out,cursor,16);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,255);
+    cursor=native_put_u8(out,cursor,193);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,133);
+    cursor=native_put_u8(out,cursor,192);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,133);
+    let digit_patch: i64 = cursor;
+    cursor=native_put_i32(out,cursor,digit_loop-(digit_patch+4));
+
+    // Prepend '-' when the original value was negative.
+    cursor=native_put_u8(out,cursor,69); cursor=native_put_u8(out,cursor,132);
+    cursor=native_put_u8(out,cursor,210);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,132);
+    let write_patch: i64 = cursor; cursor=native_put_i32(out,cursor,0);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,255);
+    cursor=native_put_u8(out,cursor,200);
+    cursor=native_put_u8(out,cursor,65); cursor=native_put_u8(out,cursor,198);
+    cursor=native_put_u8(out,cursor,0); cursor=native_put_u8(out,cursor,45);
+    cursor=native_put_u8(out,cursor,73); cursor=native_put_u8(out,cursor,255);
+    cursor=native_put_u8(out,cursor,193);
+    let write_label: i64 = cursor;
+    native_patch_i32(out,write_patch,write_label-(write_patch+4));
+
+    // write(1,r8,r9); add rsp,40; ret
+    cursor=native_put_u8(out,cursor,184); cursor=native_put_u32(out,cursor,1);
+    cursor=native_put_u8(out,cursor,191); cursor=native_put_u32(out,cursor,1);
+    cursor=native_put_u8(out,cursor,76); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,198);
+    cursor=native_put_u8(out,cursor,76); cursor=native_put_u8(out,cursor,137);
+    cursor=native_put_u8(out,cursor,202);
+    cursor=native_put_u8(out,cursor,15); cursor=native_put_u8(out,cursor,5);
+    cursor=native_put_u8(out,cursor,72); cursor=native_put_u8(out,cursor,131);
+    cursor=native_put_u8(out,cursor,196); cursor=native_put_u8(out,cursor,40);
+    cursor=native_put_u8(out,cursor,195);
+    return cursor;
+}

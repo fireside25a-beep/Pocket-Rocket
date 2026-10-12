@@ -1,0 +1,18 @@
+comptime fn fib(n: i64) -> i64 {
+    if n <= 1 {
+        return n;
+    } else {
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+
+const answer: i64 = fib(10);
+
+comptime {
+    assert(answer == 55);
+}
+
+fn main() -> i32 {
+    print_i64(answer);
+    return as(i32, 0);
+}

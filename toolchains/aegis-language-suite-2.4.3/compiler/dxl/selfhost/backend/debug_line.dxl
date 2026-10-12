@@ -1,0 +1,72 @@
+import "byte_writer.dxl";
+
+struct BackendDebugLine {
+    length: i64,
+    address_offset: i64,
+}
+
+fn backend_emit_file_name(out: slice_i64, at: i64) -> i64 {
+    let cursor: i64 = at;
+    // backend_fixture.dxl
+    cursor=bw_put_u8(out,cursor,98);  cursor=bw_put_u8(out,cursor,97);
+    cursor=bw_put_u8(out,cursor,99);  cursor=bw_put_u8(out,cursor,107);
+    cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,110);
+    cursor=bw_put_u8(out,cursor,100); cursor=bw_put_u8(out,cursor,95);
+    cursor=bw_put_u8(out,cursor,102); cursor=bw_put_u8(out,cursor,105);
+    cursor=bw_put_u8(out,cursor,120); cursor=bw_put_u8(out,cursor,116);
+    cursor=bw_put_u8(out,cursor,117); cursor=bw_put_u8(out,cursor,114);
+    cursor=bw_put_u8(out,cursor,101); cursor=bw_put_u8(out,cursor,46);
+    cursor=bw_put_u8(out,cursor,100); cursor=bw_put_u8(out,cursor,120);
+    cursor=bw_put_u8(out,cursor,108); cursor=bw_put_u8(out,cursor,0);
+    return cursor;
+}
+
+// Emits one valid DWARF v4 line table. It maps the complete three-byte text
+// fixture to line one. The address is resolved by .rela.debug_line.
+fn backend_emit_debug_line(out: slice_i64, start: i64) -> BackendDebugLine {
+    let cursor: i64 = start;
+    let unit_length_at: i64 = cursor;
+    cursor = bw_put_u32(out,cursor,0);
+    cursor = bw_put_u16(out,cursor,4);
+    let header_length_at: i64 = cursor;
+    cursor = bw_put_u32(out,cursor,0);
+    let header_start: i64 = cursor;
+
+    cursor=bw_put_u8(out,cursor,1);   // minimum instruction length
+    cursor=bw_put_u8(out,cursor,1);   // maximum operations per instruction
+    cursor=bw_put_u8(out,cursor,1);   // default_is_stmt
+    cursor=bw_put_u8(out,cursor,251); // line_base = -5
+    cursor=bw_put_u8(out,cursor,14);  // line_range
+    cursor=bw_put_u8(out,cursor,13);  // opcode_base
+
+    // Standard-opcode operand counts for opcodes 1 through 12.
+    cursor=bw_put_u8(out,cursor,0); cursor=bw_put_u8(out,cursor,1);
+    cursor=bw_put_u8(out,cursor,1); cursor=bw_put_u8(out,cursor,1);
+    cursor=bw_put_u8(out,cursor,1); cursor=bw_put_u8(out,cursor,0);
+    cursor=bw_put_u8(out,cursor,0); cursor=bw_put_u8(out,cursor,0);
+    cursor=bw_put_u8(out,cursor,1); cursor=bw_put_u8(out,cursor,0);
+    cursor=bw_put_u8(out,cursor,0); cursor=bw_put_u8(out,cursor,1);
+
+    cursor=bw_put_u8(out,cursor,0); // include-directory terminator
+    cursor=backend_emit_file_name(out,cursor);
+    cursor=bw_put_u8(out,cursor,0); // directory index
+    cursor=bw_put_u8(out,cursor,0); // modification time
+    cursor=bw_put_u8(out,cursor,0); // file length
+    cursor=bw_put_u8(out,cursor,0); // file-table terminator
+    bw_patch_u32(out,header_length_at,cursor-header_start);
+
+    cursor=bw_put_u8(out,cursor,0); // extended opcode marker
+    cursor=bw_put_u8(out,cursor,9); // one opcode plus eight address bytes
+    cursor=bw_put_u8(out,cursor,2); // DW_LNE_set_address
+    let address_offset: i64 = cursor-start;
+    cursor=bw_zero(out,cursor,8);
+    cursor=bw_put_u8(out,cursor,1); // DW_LNS_copy
+    cursor=bw_put_u8(out,cursor,2); // DW_LNS_advance_pc
+    cursor=bw_put_u8(out,cursor,3); // text size
+    cursor=bw_put_u8(out,cursor,0); // extended opcode marker
+    cursor=bw_put_u8(out,cursor,1);
+    cursor=bw_put_u8(out,cursor,1); // DW_LNE_end_sequence
+
+    bw_patch_u32(out,unit_length_at,cursor-start-4);
+    return BackendDebugLine{length:cursor-start,address_offset:address_offset};
+}

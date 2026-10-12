@@ -1,0 +1,6 @@
+/build/
+/dist/
+/vendor/aegis-2.4.0/build/
+*.tmp.*
+__pycache__/
+*.pyc

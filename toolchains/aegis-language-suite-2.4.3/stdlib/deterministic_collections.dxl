@@ -1,0 +1,21 @@
+// Deterministic fixed-capacity ordered map primitives.
+// The caller owns key/value storage. Keys are always ascending and unique.
+fn ordered_find(keys:slice_i64,count:i64,key:i64)->i64 {
+    let i:i64=0;
+    while i<count {
+        if keys[i]==key { return i; }
+        if keys[i]>key { return 0-i-1; }
+        i=i+1;
+    }
+    return 0-count-1;
+}
+fn ordered_put(keys:slice_i64,values:slice_i64,count:i64,key:i64,value:i64)->result_i64 {
+    if count<0||count>=array_len(keys)||array_len(keys)!=array_len(values) { return err_i64(as(i32,1)); }
+    let at:i64=ordered_find(keys,count,key);
+    if at>=0 { values[at]=value; return ok_i64(count); }
+    let pos:i64=0-at-1;
+    let i:i64=count;
+    while i>pos { keys[i]=keys[i-1]; values[i]=values[i-1]; i=i-1; }
+    keys[pos]=key; values[pos]=value;
+    return ok_i64(count+1);
+}

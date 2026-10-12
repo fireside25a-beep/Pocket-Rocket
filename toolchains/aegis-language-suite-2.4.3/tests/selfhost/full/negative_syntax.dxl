@@ -1,0 +1,7 @@
+const = 1;
+
+fn broken(value i64) -> i32 {
+    let item: i64 = ;
+    assert(true)
+    return as(i32, 0);
+}

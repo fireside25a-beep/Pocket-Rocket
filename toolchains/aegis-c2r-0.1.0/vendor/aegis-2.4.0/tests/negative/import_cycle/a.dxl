@@ -1,0 +1,2 @@
+import "b.dxl";
+fn main() -> i32 { return as(i32, 0); }

@@ -1,0 +1,7 @@
+fn main() -> i32 {
+    if false {
+        let hidden: i64 = 42;
+    }
+    print_i64(hidden);
+    return as(i32, 0);
+}

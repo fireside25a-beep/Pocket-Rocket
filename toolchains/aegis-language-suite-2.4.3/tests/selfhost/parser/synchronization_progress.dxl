@@ -1,0 +1,14 @@
+import "../../../compiler/dxl/selfhost/parser/synchronize.dxl";
+
+fn main()->i32 {
+    let owner:array_i64=array_new(4,0);
+    let tokens:slice_i64=slice(owner,0,array_len(owner));
+    tokens[0]=TK_BAD; tokens[1]=TK_BAD; tokens[2]=TK_CONST; tokens[3]=TK_EOF;
+    let decl:SyncResult=synchronize_declaration(tokens,0,4,0);
+    assert(decl.progressed); assert(!decl.at_eof); assert(decl.pos==2);
+    tokens[2]=TK_LET;
+    let statement:SyncResult=synchronize_statement(tokens,0,4,0);
+    assert(statement.progressed); assert(!statement.at_eof); assert(statement.pos==2);
+    print_i64(decl.pos); print_i64(statement.pos); print_bool(decl.progressed&&statement.progressed);
+    array_free(owner); return as(i32,0);
+}

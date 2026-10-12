@@ -1,0 +1,43 @@
+name: release-gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate-matrix:
+    name: ${{ matrix.gate }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [regressions, native, native-source, foundations, reproduce, matrix, static, verify]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ${{ matrix.gate }} gate
+        run: make ${{ matrix.gate }}
+
+  clean-archive:
+    name: clean archive
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    needs: gate-matrix
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and retest release archive
+        run: make release
+      - name: Verify archive checksum
+        run: cd dist && sha256sum -c Aegis-Language-Suite-2.4.3.zip.sha256
+      - name: Upload tested release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aegis-Language-Suite-2.4.3
+          path: |
+            dist/Aegis-Language-Suite-2.4.3.zip
+            dist/Aegis-Language-Suite-2.4.3.zip.sha256
+          if-no-files-found: error

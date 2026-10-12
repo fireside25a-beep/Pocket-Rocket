@@ -1,0 +1,10 @@
+// The bounded grammar accepts this source, while named aggregate field typing
+// remains deliberately fail-closed. Its semantic rejection is an executable
+// guard against accidentally claiming complete self-hosting.
+struct Cursor {
+    position: i64,
+}
+
+fn peek(tokens: slice_i64, cursor: Cursor) -> i64 {
+    return tokens[cursor.position];
+}

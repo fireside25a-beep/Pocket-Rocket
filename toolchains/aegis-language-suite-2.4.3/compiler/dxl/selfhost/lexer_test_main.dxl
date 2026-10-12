@@ -1,0 +1,88 @@
+import "lexer.dxl";
+
+// Test driver output is a canonical numeric stream:
+// header(token-count, diagnostic-count, fatal-code), token records, then
+// diagnostic records. This makes exact repeat comparisons straightforward.
+fn main() -> i32 {
+    if arg_count()!=2 { return as(i32,2); }
+
+    let src_owner: array_i64=read_arg_bytes(1);
+    let src: slice_i64=slice(src_owner,0,array_len(src_owner));
+    let classes_owner: array_i64=array_new(256,0);
+    let singles_owner: array_i64=array_new(256,0);
+    let keyword_bytes_owner: array_i64=array_new(KEYWORD_BYTE_COUNT,0);
+    let keyword_starts_owner: array_i64=array_new(KEYWORD_COUNT,0);
+    let keyword_lengths_owner: array_i64=array_new(KEYWORD_COUNT,0);
+    let keyword_kinds_owner: array_i64=array_new(KEYWORD_COUNT,0);
+    let state_owner: array_i64=array_new(LS_SLOTS,0);
+
+    let token_kinds_owner: array_i64=array_new(4096,0);
+    let token_starts_owner: array_i64=array_new(4096,0);
+    let token_ends_owner: array_i64=array_new(4096,0);
+    let token_lines_owner: array_i64=array_new(4096,0);
+    let token_columns_owner: array_i64=array_new(4096,0);
+    let token_files_owner: array_i64=array_new(4096,0);
+    let token_values_owner: array_i64=array_new(4096,0);
+
+    let diag_codes_owner: array_i64=array_new(128,0);
+    let diag_starts_owner: array_i64=array_new(128,0);
+    let diag_ends_owner: array_i64=array_new(128,0);
+    let diag_lines_owner: array_i64=array_new(128,0);
+    let diag_columns_owner: array_i64=array_new(128,0);
+    let diag_files_owner: array_i64=array_new(128,0);
+
+    let classes: slice_i64=slice(classes_owner,0,array_len(classes_owner));
+    let singles: slice_i64=slice(singles_owner,0,array_len(singles_owner));
+    let keyword_bytes: slice_i64=slice(keyword_bytes_owner,0,array_len(keyword_bytes_owner));
+    let keyword_starts: slice_i64=slice(keyword_starts_owner,0,array_len(keyword_starts_owner));
+    let keyword_lengths: slice_i64=slice(keyword_lengths_owner,0,array_len(keyword_lengths_owner));
+    let keyword_kinds: slice_i64=slice(keyword_kinds_owner,0,array_len(keyword_kinds_owner));
+    let state: slice_i64=slice(state_owner,0,array_len(state_owner));
+    let token_kinds: slice_i64=slice(token_kinds_owner,0,array_len(token_kinds_owner));
+    let token_starts: slice_i64=slice(token_starts_owner,0,array_len(token_starts_owner));
+    let token_ends: slice_i64=slice(token_ends_owner,0,array_len(token_ends_owner));
+    let token_lines: slice_i64=slice(token_lines_owner,0,array_len(token_lines_owner));
+    let token_columns: slice_i64=slice(token_columns_owner,0,array_len(token_columns_owner));
+    let token_files: slice_i64=slice(token_files_owner,0,array_len(token_files_owner));
+    let token_values: slice_i64=slice(token_values_owner,0,array_len(token_values_owner));
+    let diag_codes: slice_i64=slice(diag_codes_owner,0,array_len(diag_codes_owner));
+    let diag_starts: slice_i64=slice(diag_starts_owner,0,array_len(diag_starts_owner));
+    let diag_ends: slice_i64=slice(diag_ends_owner,0,array_len(diag_ends_owner));
+    let diag_lines: slice_i64=slice(diag_lines_owner,0,array_len(diag_lines_owner));
+    let diag_columns: slice_i64=slice(diag_columns_owner,0,array_len(diag_columns_owner));
+    let diag_files: slice_i64=slice(diag_files_owner,0,array_len(diag_files_owner));
+
+    let result: LexerResult=LexerResult{ok:false,token_count:0,diagnostic_count:0,fatal_code:0};
+    let tables_ok: bool=byte_tables_init(classes,singles);
+    let keywords_ok: bool=keyword_table_init(keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds);
+    let rc: i32=as(i32,0);
+    if !tables_ok||!keywords_ok {
+        rc=as(i32,2);
+    } else {
+        result=lex_source(src,7,classes,singles,keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds,state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files);
+        print_i64(result.token_count);print_i64(result.diagnostic_count);print_i64(result.fatal_code);
+        let i: i64=0;
+        while i<result.token_count {
+            print_i64(token_kinds[i]);print_i64(token_starts[i]);print_i64(token_ends[i]);
+            print_i64(token_lines[i]);print_i64(token_columns[i]);print_i64(token_files[i]);print_i64(token_values[i]);
+            i=i+1;
+        }
+        i=0;
+        while i<result.diagnostic_count {
+            print_i64(diag_codes[i]);print_i64(diag_starts[i]);print_i64(diag_ends[i]);
+            print_i64(diag_lines[i]);print_i64(diag_columns[i]);print_i64(diag_files[i]);
+            i=i+1;
+        }
+        if result.fatal_code!=0 { rc=as(i32,3); }
+    }
+
+    array_free(diag_files_owner);array_free(diag_columns_owner);array_free(diag_lines_owner);
+    array_free(diag_ends_owner);array_free(diag_starts_owner);array_free(diag_codes_owner);
+    array_free(token_values_owner);array_free(token_files_owner);array_free(token_columns_owner);
+    array_free(token_lines_owner);array_free(token_ends_owner);array_free(token_starts_owner);array_free(token_kinds_owner);
+    array_free(state_owner);array_free(keyword_kinds_owner);array_free(keyword_lengths_owner);
+    array_free(keyword_starts_owner);array_free(keyword_bytes_owner);array_free(singles_owner);array_free(classes_owner);
+    array_free(src_owner);
+    return rc;
+}
+

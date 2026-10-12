@@ -1,0 +1,8 @@
+fn main() -> i32 {
+    let count: i64 = true;
+    while 1 {
+        missing = count;
+    }
+    assert(count);
+    return true;
+}

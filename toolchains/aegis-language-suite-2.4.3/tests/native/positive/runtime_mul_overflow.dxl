@@ -1,0 +1,5 @@
+fn main() -> i32 {
+    let overflow: i64 = 3037000500 * 3037000500;
+    print_i64(overflow);
+    return as(i32, 0);
+}

@@ -1,0 +1,18 @@
+comptime fn count_to(limit: i64) -> i64 {
+    let count: i64 = 0;
+    while count < limit {
+        count = count + 1;
+    }
+    return count;
+}
+
+const loop_result: i64 = count_to(10);
+
+comptime {
+    assert(loop_result == 10);
+}
+
+fn main() -> i32 {
+    print_i64(loop_result);
+    return as(i32, 0);
+}

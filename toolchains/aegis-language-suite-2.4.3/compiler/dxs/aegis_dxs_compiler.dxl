@@ -1,0 +1,21 @@
+import "aegis_dxs_core.dxl";
+
+fn main() -> i32 {
+    if arg_count()!=3 { return as(i32,2); }
+    let src_owner: array_i64 = read_arg_bytes(1);
+    let src: slice_i64 = slice(src_owner,0,array_len(src_owner));
+    let out_owner: array_i64 = array_new(array_len(src_owner)*10+128,0);
+    let out: slice_i64 = slice(out_owner,0,array_len(out_owner));
+    let compiled: result_i64 = a_compile_dxs(src,out);
+    let rc: i32 = as(i32,0);
+    if is_err(compiled) { print_i32(error_code(compiled)); rc=as(i32,1); }
+    else {
+        let used: i64 = unwrap_i64(compiled);
+        let payload: slice_i64 = slice(out_owner,0,used);
+        let written: result_i64 = write_arg_bytes(2,payload);
+        if is_err(written) { rc=as(i32,1); }
+    }
+    array_free(out_owner);
+    array_free(src_owner);
+    return rc;
+}

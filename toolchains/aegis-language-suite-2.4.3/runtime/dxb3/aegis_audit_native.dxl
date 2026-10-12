@@ -1,0 +1,23 @@
+import "aegis_common.dxl";
+
+fn main() -> i32 {
+    if arg_count() != 2 { return as(i32, 2); }
+    let code_owner: array_i64 = read_arg_bytes(1);
+    let code: slice_i64 = slice(code_owner, 0, array_len(code_owner));
+    let analysis: AAnalysis = a_verify(code);
+    let rc: i32 = as(i32, 0);
+    if !analysis.ok {
+        print_i64(analysis.error);
+        rc = as(i32, 1);
+    } else {
+        print_i64(analysis.caps);
+        print_i64(analysis.max_depth);
+        print_i64(analysis.steps);
+        print_i64(A_MAX_HEAP);
+        print_i64(a_load32(code, 32));
+        print_i64(a_load32(code, 12));
+        print_i64(a_load32(code, 8));
+    }
+    array_free(code_owner);
+    return rc;
+}

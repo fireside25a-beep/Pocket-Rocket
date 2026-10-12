@@ -1,0 +1,7 @@
+const maximum: i64 = 9223372036854775807;
+const minimum: i64 = -9223372036854775807 - 1;
+
+fn main() -> i32 {
+    assert(maximum > minimum);
+    return as(i32, 0);
+}

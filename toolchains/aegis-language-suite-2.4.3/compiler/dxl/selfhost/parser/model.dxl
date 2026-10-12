@@ -1,0 +1,83 @@
+// Restricted-profile parser model. Managed storage is kept in parallel slices;
+// structs contain scalar state only.
+
+const TK_EOF: i64 = 0;
+const TK_IDENT: i64 = 1;
+const TK_CONST: i64 = 2;
+const TK_FN: i64 = 3;
+const TK_LBRACE: i64 = 4;
+const TK_RBRACE: i64 = 5;
+const TK_SEMI: i64 = 6;
+const TK_LET: i64 = 7;
+const TK_RETURN: i64 = 8;
+const TK_BAD: i64 = 9;
+const TK_STRUCT: i64 = 10;
+const TK_ENUM: i64 = 11;
+const TK_IMPORT: i64 = 12;
+const TK_TEST: i64 = 13;
+const TK_COMPTIME: i64 = 14;
+const TK_ASSERT: i64 = 15;
+const TK_IF: i64 = 16;
+const TK_WHILE: i64 = 17;
+
+const AST_PROGRAM: i64 = 1;
+const AST_CONST_DECL: i64 = 2;
+const AST_FN_DECL: i64 = 3;
+const AST_LET_STMT: i64 = 4;
+const AST_RETURN_STMT: i64 = 5;
+const AST_ASSERT_STMT: i64 = 6;
+const AST_ERROR: i64 = 7;
+
+const TYPE_INVALID: i64 = 0;
+const TYPE_I64: i64 = 1;
+const TYPE_I32: i64 = 2;
+const TYPE_BOOL: i64 = 3;
+const TYPE_NAMED: i64 = 4;
+
+const OWN_PLAIN: i64 = 0;
+const OWN_OWNED: i64 = 1;
+const OWN_BORROWED: i64 = 2;
+
+const DIAG_EXPECTED_DECL: i64 = 1202;
+const DIAG_EXPECTED_STMT: i64 = 1203;
+const DIAG_EXPECTED_IDENT: i64 = 1204;
+const DIAG_EXPECTED_SEMI: i64 = 1205;
+const DIAG_EXPECTED_LBRACE: i64 = 1206;
+const DIAG_EXPECTED_RBRACE: i64 = 1207;
+const DIAG_PROGRESS: i64 = 1298;
+const DIAG_CAPACITY: i64 = 1299;
+
+struct SpanValue {
+    ok: bool,
+    file: i64,
+    start: i64,
+    end: i64,
+    start_line: i64,
+    start_col: i64,
+    end_line: i64,
+    end_col: i64,
+}
+
+struct SyncResult {
+    pos: i64,
+    progressed: bool,
+    at_eof: bool,
+}
+
+struct NodePush {
+    ok: bool,
+    span_count: i64,
+    ast_count: i64,
+    node: i64,
+}
+
+struct ParseReport {
+    finished: bool,
+    clean: bool,
+    pos: i64,
+    span_count: i64,
+    ast_count: i64,
+    type_count: i64,
+    diag_count: i64,
+    progress_failures: i64,
+}

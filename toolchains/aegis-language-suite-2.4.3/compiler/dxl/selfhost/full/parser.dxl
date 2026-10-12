@@ -1,0 +1,719 @@
+import "../lexer.dxl";
+import "model.dxl";
+
+fn full_token_start(starts:slice_i64,token_count:i64,pos:i64)->i64 {
+    if token_count<=0 { return 0; }
+    if pos<0 { return starts[0]; }
+    if pos>=token_count { return starts[token_count-1]; }
+    return starts[pos];
+}
+
+fn full_token_end(ends:slice_i64,token_count:i64,pos:i64)->i64 {
+    if token_count<=0 { return 0; }
+    if pos<0 { return ends[0]; }
+    if pos>=token_count { return ends[token_count-1]; }
+    return ends[pos];
+}
+
+fn full_token_line(lines:slice_i64,token_count:i64,pos:i64)->i64 {
+    if token_count<=0 { return 1; }
+    if pos<0 { return lines[0]; }
+    if pos>=token_count { return lines[token_count-1]; }
+    return lines[pos];
+}
+
+fn full_token_column(columns:slice_i64,token_count:i64,pos:i64)->i64 {
+    if token_count<=0 { return 1; }
+    if pos<0 { return columns[0]; }
+    if pos>=token_count { return columns[token_count-1]; }
+    return columns[pos];
+}
+
+fn full_diag(
+    state:slice_i64,
+    codes:slice_i64,starts:slice_i64,ends:slice_i64,lines:slice_i64,columns:slice_i64,
+    code:i64,pos:i64,
+    token_starts:slice_i64,token_ends:slice_i64,token_lines:slice_i64,token_columns:slice_i64,token_count:i64
+)->bool {
+    let at:i64=state[FULL_STATE_DIAG_COUNT];
+    if at>=array_len(codes)||at>=array_len(starts)||at>=array_len(ends)||at>=array_len(lines)||at>=array_len(columns) {
+        state[FULL_STATE_FATAL]=FULL_E_CAPACITY;
+        return false;
+    }
+    codes[at]=code;
+    starts[at]=full_token_start(token_starts,token_count,pos);
+    ends[at]=full_token_end(token_ends,token_count,pos);
+    lines[at]=full_token_line(token_lines,token_count,pos);
+    columns[at]=full_token_column(token_columns,token_count,pos);
+    state[FULL_STATE_DIAG_COUNT]=at+1;
+    return true;
+}
+
+fn full_node(
+    state:slice_i64,
+    kinds:slice_i64,parents:slice_i64,firsts:slice_i64,lasts:slice_i64,types:slice_i64,values:slice_i64,
+    name_starts:slice_i64,name_lengths:slice_i64,scopes:slice_i64,
+    kind:i64,parent:i64,first:i64,last:i64,type_id:i64,value:i64,name_start:i64,name_length:i64
+)->i64 {
+    let at:i64=state[FULL_STATE_AST_COUNT];
+    if at>=array_len(kinds)||at>=array_len(parents)||at>=array_len(firsts)||at>=array_len(lasts)||at>=array_len(types)||at>=array_len(values)||at>=array_len(name_starts)||at>=array_len(name_lengths)||at>=array_len(scopes) {
+        state[FULL_STATE_FATAL]=FULL_E_CAPACITY;
+        return -1;
+    }
+    kinds[at]=kind;parents[at]=parent;firsts[at]=first;lasts[at]=last;
+    types[at]=type_id;values[at]=value;name_starts[at]=name_start;name_lengths[at]=name_length;
+    scopes[at]=state[FULL_STATE_SCOPE];
+    state[FULL_STATE_AST_COUNT]=at+1;
+    return at;
+}
+
+fn full_type_from_token(kind:i64)->i64 {
+    if kind==TK_I64 { return FULL_TYPE_I64; }
+    if kind==TK_I32 { return FULL_TYPE_I32; }
+    if kind==TK_BOOL { return FULL_TYPE_BOOL; }
+    if kind==TK_VOID { return FULL_TYPE_VOID; }
+    if kind==TK_ARRAY_I64 { return FULL_TYPE_ARRAY_I64; }
+    if kind==TK_SLICE_I64 { return FULL_TYPE_SLICE_I64; }
+    if kind==TK_RESULT_I64 { return FULL_TYPE_RESULT_I64; }
+    if kind==TK_IDENT { return FULL_TYPE_NAMED; }
+    return FULL_TYPE_UNKNOWN;
+}
+
+fn full_binary_precedence(kind:i64)->i64 {
+    if kind==TK_OR { return 1; }
+    if kind==TK_AND { return 2; }
+    if kind==TK_EQ||kind==TK_NE { return 3; }
+    if kind==TK_LT||kind==TK_LE||kind==TK_GT||kind==TK_GE { return 4; }
+    if kind==TK_PLUS||kind==TK_MINUS { return 5; }
+    if kind==TK_STAR||kind==TK_SLASH||kind==TK_PERCENT { return 6; }
+    return 0;
+}
+
+fn full_binary_ast_kind(kind:i64)->i64 {
+    if kind==TK_PLUS { return FULL_AST_ADD; }
+    if kind==TK_MINUS { return FULL_AST_SUB; }
+    if kind==TK_STAR { return FULL_AST_MUL; }
+    if kind==TK_SLASH { return FULL_AST_DIV; }
+    if kind==TK_PERCENT { return FULL_AST_MOD; }
+    if kind==TK_EQ { return FULL_AST_EQ; }
+    if kind==TK_NE { return FULL_AST_NE; }
+    if kind==TK_LT { return FULL_AST_LT; }
+    if kind==TK_LE { return FULL_AST_LE; }
+    if kind==TK_GT { return FULL_AST_GT; }
+    if kind==TK_GE { return FULL_AST_GE; }
+    if kind==TK_AND { return FULL_AST_AND; }
+    if kind==TK_OR { return FULL_AST_OR; }
+    return FULL_AST_ERROR;
+}
+
+// Precedence-climbing recursive descent. Child expression nodes are emitted
+// before their operator node, giving semantic analysis a deterministic postorder.
+fn full_parse_expression(
+    token_kinds:slice_i64,token_starts:slice_i64,token_ends:slice_i64,
+    token_lines:slice_i64,token_columns:slice_i64,token_values:slice_i64,token_count:i64,
+    state:slice_i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_firsts:slice_i64,ast_lasts:slice_i64,
+    ast_types:slice_i64,ast_values:slice_i64,ast_name_starts:slice_i64,ast_name_lengths:slice_i64,ast_scopes:slice_i64,
+    diag_codes:slice_i64,diag_starts:slice_i64,diag_ends:slice_i64,diag_lines:slice_i64,diag_columns:slice_i64,
+    parent:i64,min_precedence:i64
+)->FullParseValue {
+    let depth:i64=state[FULL_STATE_EXPR_DEPTH]+1;
+    state[FULL_STATE_EXPR_DEPTH]=depth;
+    if depth>FULL_MAX_EXPR_DEPTH {
+        full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_NESTING_LIMIT,state[FULL_STATE_POS],
+            token_starts,token_ends,token_lines,token_columns,token_count);
+        state[FULL_STATE_EXPR_DEPTH]=depth-1;
+        return FullParseValue{ok:false,node:-1};
+    }
+    let pos:i64=state[FULL_STATE_POS];
+    if pos>=token_count||token_kinds[pos]==TK_EOF {
+        full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_EXPR,pos,
+            token_starts,token_ends,token_lines,token_columns,token_count);
+        state[FULL_STATE_EXPR_DEPTH]=depth-1;
+        return FullParseValue{ok:false,node:-1};
+    }
+
+    let left:i64=-1;
+    let start:i64=pos;
+    let kind:i64=token_kinds[pos];
+
+    if kind==TK_MINUS||kind==TK_BANG {
+        state[FULL_STATE_POS]=pos+1;
+        let operand:FullParseValue=full_parse_expression(
+            token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+            ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,7);
+        if operand.ok {
+            let unary_kind:i64=FULL_AST_NEGATE;
+            if kind==TK_BANG { unary_kind=FULL_AST_NOT; }
+            left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,unary_kind,parent,start,state[FULL_STATE_POS]-1,
+                FULL_TYPE_UNKNOWN,0,0,0);
+            if left>=0 { ast_parents[operand.node]=left; }
+        }
+    } else if kind==TK_INT {
+        state[FULL_STATE_POS]=pos+1;
+        left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_INT,parent,pos,pos,FULL_TYPE_I64,token_values[pos],0,0);
+    } else if kind==TK_TRUE||kind==TK_FALSE {
+        state[FULL_STATE_POS]=pos+1;
+        let bool_value:i64=0; if kind==TK_TRUE { bool_value=1; }
+        left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_BOOL,parent,pos,pos,FULL_TYPE_BOOL,bool_value,0,0);
+    } else if kind==TK_LPAREN {
+        state[FULL_STATE_POS]=pos+1;
+        let grouped:FullParseValue=full_parse_expression(
+            token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+            ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,1);
+        left=grouped.node;
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RPAREN {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+        } else {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                token_starts,token_ends,token_lines,token_columns,token_count);
+        }
+    } else if kind==TK_AS {
+        state[FULL_STATE_POS]=pos+1;
+        let valid:bool=true;
+        if state[FULL_STATE_POS]>=token_count||token_kinds[state[FULL_STATE_POS]]!=TK_LPAREN {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                token_starts,token_ends,token_lines,token_columns,token_count); valid=false;
+        } else { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        let target_type:i64=FULL_TYPE_UNKNOWN;
+        if valid&&state[FULL_STATE_POS]<token_count {
+            target_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]);
+            if target_type==FULL_TYPE_UNKNOWN {
+                full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],
+                    token_starts,token_ends,token_lines,token_columns,token_count); valid=false;
+            } else { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        }
+        if valid&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COMMA {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+        } else if valid {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                token_starts,token_ends,token_lines,token_columns,token_count); valid=false;
+        }
+        if valid {
+            let cast_value:FullParseValue=full_parse_expression(
+                token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,1);
+            if cast_value.ok {
+                left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                    ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_CAST,parent,start,state[FULL_STATE_POS]-1,
+                    target_type,0,0,0);
+                if left>=0 { ast_parents[cast_value.node]=left; }
+            }
+        }
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RPAREN {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+        } else {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                token_starts,token_ends,token_lines,token_columns,token_count);
+        }
+    } else if kind==TK_IDENT {
+        let name_start:i64=token_starts[pos];
+        let name_length:i64=token_ends[pos]-token_starts[pos];
+        state[FULL_STATE_POS]=pos+1;
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE&&
+            ((state[FULL_STATE_POS]+1<token_count&&token_kinds[state[FULL_STATE_POS]+1]==TK_RBRACE)||
+             (state[FULL_STATE_POS]+2<token_count&&token_kinds[state[FULL_STATE_POS]+1]==TK_IDENT&&token_kinds[state[FULL_STATE_POS]+2]==TK_COLON)) {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            let field_start:i64=state[FULL_STATE_AST_COUNT];
+            let valid_literal:bool=true;
+            while valid_literal&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let field_token:i64=state[FULL_STATE_POS];
+                let field_name_start:i64=0;let field_name_length:i64=0;
+                if token_kinds[field_token]==TK_IDENT {
+                    field_name_start=token_starts[field_token];field_name_length=token_ends[field_token]-field_name_start;
+                    state[FULL_STATE_POS]=field_token+1;
+                } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,field_token,token_starts,token_ends,token_lines,token_columns,token_count);valid_literal=false; }
+                if valid_literal&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COLON { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if valid_literal { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);valid_literal=false; }
+                if valid_literal {
+                    let field_node:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                        ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_FIELD_VALUE,parent,field_token,field_token,
+                        FULL_TYPE_UNKNOWN,0,field_name_start,field_name_length);
+                    let field_value:FullParseValue=full_parse_expression(
+                        token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                        ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                        diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,field_node,1);
+                    if !field_value.ok { valid_literal=false; }
+                    if field_node>=0 { ast_lasts[field_node]=state[FULL_STATE_POS]-1; }
+                }
+                if valid_literal&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COMMA { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if valid_literal&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);valid_literal=false; }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_STRUCT_LITERAL,parent,start,state[FULL_STATE_POS]-1,
+                FULL_TYPE_UNKNOWN,0,name_start,name_length);
+            let field_child:i64=field_start;
+            if left>=0 { while field_child<left { if ast_parents[field_child]==parent { ast_parents[field_child]=left; } field_child=field_child+1; } }
+        } else if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LPAREN {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            let arg_start:i64=state[FULL_STATE_AST_COUNT];
+            let valid:bool=true;
+            while valid&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RPAREN&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let argument:FullParseValue=full_parse_expression(
+                    token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,1);
+                if !argument.ok { valid=false; }
+                if valid&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COMMA {
+                    state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+                } else if valid&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RPAREN {
+                    full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                        token_starts,token_ends,token_lines,token_columns,token_count); valid=false;
+                }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RPAREN {
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            } else {
+                full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],
+                    token_starts,token_ends,token_lines,token_columns,token_count);
+            }
+            left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_CALL,parent,start,state[FULL_STATE_POS]-1,
+                FULL_TYPE_UNKNOWN,0,name_start,name_length);
+            let child:i64=arg_start;
+            if left>=0 { while child<left { if ast_parents[child]==parent { ast_parents[child]=left; } child=child+1; } }
+        } else {
+            left=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_NAME,parent,pos,pos,FULL_TYPE_UNKNOWN,0,name_start,name_length);
+        }
+    } else {
+        full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_EXPR,pos,
+            token_starts,token_ends,token_lines,token_columns,token_count);
+        state[FULL_STATE_POS]=pos+1;
+    }
+
+    if left<0 { state[FULL_STATE_EXPR_DEPTH]=depth-1;return FullParseValue{ok:false,node:-1}; }
+
+    let postfix:bool=true;
+    while postfix&&state[FULL_STATE_POS]<token_count {
+        let postfix_pos:i64=state[FULL_STATE_POS];
+        if token_kinds[postfix_pos]==TK_LBRACKET {
+            state[FULL_STATE_POS]=postfix_pos+1;
+            let index_value:FullParseValue=full_parse_expression(
+                token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,1);
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACKET { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if index_value.ok {
+                let indexed:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                    ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_INDEX,parent,ast_firsts[left],state[FULL_STATE_POS]-1,
+                    FULL_TYPE_UNKNOWN,0,0,0);
+                if indexed>=0 { ast_parents[left]=indexed;ast_parents[index_value.node]=indexed;left=indexed; }
+            }
+        } else if token_kinds[postfix_pos]==TK_DOT {
+            state[FULL_STATE_POS]=postfix_pos+1;
+            let field_start:i64=0;let field_length:i64=0;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IDENT {
+                field_start=token_starts[state[FULL_STATE_POS]];field_length=token_ends[state[FULL_STATE_POS]]-field_start;
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);postfix=false; }
+            if postfix {
+                let accessed:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                    ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_FIELD_ACCESS,parent,ast_firsts[left],state[FULL_STATE_POS]-1,
+                    FULL_TYPE_UNKNOWN,0,field_start,field_length);
+                if accessed>=0 { ast_parents[left]=accessed;left=accessed; }
+            }
+        } else { postfix=false; }
+    }
+
+    let scanning:bool=true;
+    while scanning&&state[FULL_STATE_POS]<token_count {
+        let operator_pos:i64=state[FULL_STATE_POS];
+        let precedence:i64=full_binary_precedence(token_kinds[operator_pos]);
+        if precedence<min_precedence||precedence==0 { scanning=false; }
+        else {
+            let operator_kind:i64=token_kinds[operator_pos];
+            state[FULL_STATE_POS]=operator_pos+1;
+            let right:FullParseValue=full_parse_expression(
+                token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,parent,precedence+1);
+            if !right.ok { scanning=false; }
+            else {
+                let combined:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                    ast_name_starts,ast_name_lengths,ast_scopes,full_binary_ast_kind(operator_kind),parent,
+                    ast_firsts[left],ast_lasts[right.node],FULL_TYPE_UNKNOWN,operator_kind,0,0);
+                if combined<0 { scanning=false; }
+                else { ast_parents[left]=combined;ast_parents[right.node]=combined;left=combined; }
+            }
+        }
+    }
+    state[FULL_STATE_EXPR_DEPTH]=depth-1;
+    return FullParseValue{ok:true,node:left};
+}
+
+fn full_open_scope(state:slice_i64,scope_parents:slice_i64)->i64 {
+    let previous:i64=state[FULL_STATE_SCOPE];
+    let created:i64=state[FULL_STATE_NEXT_SCOPE];
+    if created>=array_len(scope_parents) { state[FULL_STATE_FATAL]=FULL_E_CAPACITY; return previous; }
+    scope_parents[created]=previous;
+    state[FULL_STATE_NEXT_SCOPE]=created+1;
+    state[FULL_STATE_SCOPE]=created;
+    return previous;
+}
+
+fn full_parse_statement(
+    token_kinds:slice_i64,token_starts:slice_i64,token_ends:slice_i64,
+    token_lines:slice_i64,token_columns:slice_i64,token_values:slice_i64,token_count:i64,
+    state:slice_i64,scope_parents:slice_i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_firsts:slice_i64,ast_lasts:slice_i64,
+    ast_types:slice_i64,ast_values:slice_i64,ast_name_starts:slice_i64,ast_name_lengths:slice_i64,ast_scopes:slice_i64,
+    diag_codes:slice_i64,diag_starts:slice_i64,diag_ends:slice_i64,diag_lines:slice_i64,diag_columns:slice_i64,
+    parent:i64
+)->bool {
+    let start:i64=state[FULL_STATE_POS];
+    let statement_depth:i64=state[FULL_STATE_STMT_DEPTH]+1;
+    state[FULL_STATE_STMT_DEPTH]=statement_depth;
+    if statement_depth>FULL_MAX_STMT_DEPTH {
+        full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_NESTING_LIMIT,start,
+            token_starts,token_ends,token_lines,token_columns,token_count);
+        state[FULL_STATE_STMT_DEPTH]=statement_depth-1;
+        return false;
+    }
+    if start>=token_count||token_kinds[start]==TK_EOF||token_kinds[start]==TK_RBRACE {
+        state[FULL_STATE_STMT_DEPTH]=statement_depth-1;
+        return false;
+    }
+    let kind:i64=token_kinds[start];
+    let statement:i64=-1;
+    let ok:bool=true;
+
+    if kind==TK_LET {
+        state[FULL_STATE_POS]=start+1;
+        let name_start:i64=0;let name_length:i64=0;
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IDENT {
+            name_start=token_starts[state[FULL_STATE_POS]];name_length=token_ends[state[FULL_STATE_POS]]-name_start;
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+        } else {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],
+                token_starts,token_ends,token_lines,token_columns,token_count);ok=false;
+        }
+        let declared_type:i64=FULL_TYPE_UNKNOWN;
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COLON {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            if state[FULL_STATE_POS]<token_count { declared_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]); }
+            if declared_type==FULL_TYPE_UNKNOWN {
+                full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],
+                    token_starts,token_ends,token_lines,token_columns,token_count);ok=false;
+            } else { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        }
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_ASSIGN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+        statement=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_LET,parent,start,start,declared_type,0,name_start,name_length);
+        if statement>=0 {
+            let value:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+                token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+            if !value.ok { ok=false; }
+        }
+    } else if kind==TK_RETURN||kind==TK_ASSERT {
+        state[FULL_STATE_POS]=start+1;
+        let ast_kind:i64=FULL_AST_RETURN; if kind==TK_ASSERT { ast_kind=FULL_AST_ASSERT; }
+        statement=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,ast_kind,parent,start,start,FULL_TYPE_UNKNOWN,0,0,0);
+        if kind==TK_ASSERT&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LPAREN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        let value:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+            token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+        if !value.ok { ok=false; }
+        if kind==TK_ASSERT {
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RPAREN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+        }
+    } else if kind==TK_WHILE||kind==TK_IF {
+        state[FULL_STATE_POS]=start+1;
+        let ast_kind:i64=FULL_AST_WHILE;if kind==TK_IF { ast_kind=FULL_AST_IF; }
+        statement=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,ast_kind,parent,start,start,FULL_TYPE_UNKNOWN,0,0,0);
+        let condition:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+            token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+        if !condition.ok { ok=false; }
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            let previous:i64=full_open_scope(state,scope_parents);
+            let parsing:bool=true;
+            while parsing&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let before:i64=state[FULL_STATE_POS];
+                full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement);
+                if state[FULL_STATE_POS]<=before { state[FULL_STATE_POS]=before+1;full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,before,token_starts,token_ends,token_lines,token_columns,token_count); }
+            }
+            state[FULL_STATE_SCOPE]=previous;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+        } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+        if kind==TK_IF&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_ELSE {
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IF {
+                full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement);
+            } else if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE {
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+                let previous_else:i64=full_open_scope(state,scope_parents);
+                let parsing_else:bool=true;
+                while parsing_else&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                    let before_else:i64=state[FULL_STATE_POS];
+                    full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                        ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                        diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement);
+                    if state[FULL_STATE_POS]<=before_else { state[FULL_STATE_POS]=before_else+1;full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,before_else,token_starts,token_ends,token_lines,token_columns,token_count); }
+                }
+                state[FULL_STATE_SCOPE]=previous_else;
+                if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+            } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+        }
+    } else if kind==TK_IDENT&&start+1<token_count&&token_kinds[start+1]==TK_ASSIGN {
+        state[FULL_STATE_POS]=start+2;
+        statement=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_ASSIGN,parent,start,start,FULL_TYPE_UNKNOWN,0,
+            token_starts[start],token_ends[start]-token_starts[start]);
+        let value:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+            token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+        if !value.ok { ok=false; }
+    } else {
+        statement=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+            ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_EXPR_STMT,parent,start,start,FULL_TYPE_UNKNOWN,0,0,0);
+        let value:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+            token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+            diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+        if !value.ok { ok=false; }
+        if value.ok&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_ASSIGN {
+            ast_kinds[statement]=FULL_AST_ASSIGN;
+            state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            let assigned:FullParseValue=full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,
+                token_count,state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,statement,1);
+            if !assigned.ok { ok=false; }
+        }
+    }
+
+    if kind!=TK_WHILE&&kind!=TK_IF {
+        if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_SEMI { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+        else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);ok=false; }
+    }
+    if statement>=0 { ast_lasts[statement]=state[FULL_STATE_POS]-1; }
+    state[FULL_STATE_STMT_DEPTH]=statement_depth-1;
+    return ok;
+}
+
+fn full_parse_tokens(
+    token_kinds:slice_i64,token_starts:slice_i64,token_ends:slice_i64,
+    token_lines:slice_i64,token_columns:slice_i64,token_values:slice_i64,token_count:i64,
+    state:slice_i64,scope_parents:slice_i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_firsts:slice_i64,ast_lasts:slice_i64,
+    ast_types:slice_i64,ast_values:slice_i64,ast_name_starts:slice_i64,ast_name_lengths:slice_i64,ast_scopes:slice_i64,
+    diag_codes:slice_i64,diag_starts:slice_i64,diag_ends:slice_i64,diag_lines:slice_i64,diag_columns:slice_i64
+)->FullParseReport {
+    state[FULL_STATE_POS]=0;state[FULL_STATE_AST_COUNT]=0;state[FULL_STATE_DIAG_COUNT]=0;state[FULL_STATE_FATAL]=0;
+    state[FULL_STATE_SCOPE]=0;state[FULL_STATE_NEXT_SCOPE]=1;
+    state[FULL_STATE_EXPR_DEPTH]=0;state[FULL_STATE_STMT_DEPTH]=0;scope_parents[0]=-1;
+    let root:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+        ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_PROGRAM,-1,0,token_count-1,FULL_TYPE_VOID,0,0,0);
+
+    while state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF&&state[FULL_STATE_FATAL]==0 {
+        let origin:i64=state[FULL_STATE_POS];
+        let prefix:i64=token_kinds[origin];
+        let modifier:i64=0;
+        if prefix==TK_COMPTIME||prefix==TK_EXPORT||prefix==TK_EXTERN {
+            modifier=prefix;state[FULL_STATE_POS]=origin+1;
+        }
+        let pos:i64=state[FULL_STATE_POS];
+        let kind:i64=token_kinds[pos];
+        if kind==TK_IMPORT {
+            state[FULL_STATE_POS]=pos+1;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_STRING { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_SEMI { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                FULL_AST_IMPORT,root,origin,state[FULL_STATE_POS]-1,FULL_TYPE_VOID,modifier,0,0);
+        } else if kind==TK_CONST {
+            state[FULL_STATE_POS]=pos+1;
+            let name_start:i64=0;let name_length:i64=0;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IDENT {
+                name_start=token_starts[state[FULL_STATE_POS]];name_length=token_ends[state[FULL_STATE_POS]]-name_start;state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let declared_type:i64=FULL_TYPE_UNKNOWN;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COLON {
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+                if state[FULL_STATE_POS]<token_count { declared_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]); }
+                if declared_type==FULL_TYPE_UNKNOWN { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+                else { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_ASSIGN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let declaration:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                FULL_AST_CONST,root,origin,origin,declared_type,modifier,name_start,name_length);
+            full_parse_expression(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,
+                ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,declaration,1);
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_SEMI { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if declaration>=0 { ast_lasts[declaration]=state[FULL_STATE_POS]-1; }
+        } else if kind==TK_FN {
+            state[FULL_STATE_POS]=pos+1;
+            let name_start:i64=0;let name_length:i64=0;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IDENT {
+                name_start=token_starts[state[FULL_STATE_POS]];name_length=token_ends[state[FULL_STATE_POS]]-name_start;state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let function:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                FULL_AST_FUNCTION,root,origin,origin,FULL_TYPE_UNKNOWN,modifier,name_start,name_length);
+            let previous:i64=full_open_scope(state,scope_parents);
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LPAREN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let parameters:bool=true;
+            while parameters&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RPAREN&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let parameter_start:i64=state[FULL_STATE_POS];
+                let parameter_name_start:i64=0;let parameter_name_length:i64=0;
+                if token_kinds[state[FULL_STATE_POS]]==TK_IDENT { parameter_name_start=token_starts[state[FULL_STATE_POS]];parameter_name_length=token_ends[state[FULL_STATE_POS]]-parameter_name_start;state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);parameters=false; }
+                if parameters&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COLON { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if parameters { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);parameters=false; }
+                let parameter_type:i64=FULL_TYPE_UNKNOWN;
+                if parameters&&state[FULL_STATE_POS]<token_count { parameter_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]); }
+                if parameters&&parameter_type!=FULL_TYPE_UNKNOWN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if parameters { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);parameters=false; }
+                if parameters { full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    FULL_AST_PARAM,function,parameter_start,state[FULL_STATE_POS]-1,parameter_type,0,parameter_name_start,parameter_name_length); }
+                if parameters&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COMMA { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if parameters&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RPAREN { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);parameters=false; }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RPAREN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let return_type:i64=FULL_TYPE_VOID;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_ARROW {
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+                if state[FULL_STATE_POS]<token_count { return_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]); }
+                if return_type==FULL_TYPE_UNKNOWN { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+                else { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            }
+            if function>=0 { ast_types[function]=return_type; }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let statements:bool=true;
+            while statements&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let before:i64=state[FULL_STATE_POS];
+                full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,function);
+                if state[FULL_STATE_POS]<=before { state[FULL_STATE_POS]=before+1;full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,before,token_starts,token_ends,token_lines,token_columns,token_count); }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if function>=0 { ast_lasts[function]=state[FULL_STATE_POS]-1; }
+            state[FULL_STATE_SCOPE]=previous;
+        } else if kind==TK_STRUCT||kind==TK_ENUM {
+            state[FULL_STATE_POS]=pos+1;
+            let name_start:i64=0;let name_length:i64=0;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_IDENT {
+                name_start=token_starts[state[FULL_STATE_POS]];name_length=token_ends[state[FULL_STATE_POS]]-name_start;
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let declaration_kind:i64=FULL_AST_STRUCT;if kind==TK_ENUM { declaration_kind=FULL_AST_ENUM; }
+            let declaration:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,declaration_kind,root,origin,origin,FULL_TYPE_NAMED,modifier,name_start,name_length);
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let members:bool=true;
+            while members&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let member_start:i64=state[FULL_STATE_POS];
+                let member_name_start:i64=0;let member_name_length:i64=0;
+                if token_kinds[member_start]==TK_IDENT {
+                    member_name_start=token_starts[member_start];member_name_length=token_ends[member_start]-member_name_start;
+                    state[FULL_STATE_POS]=member_start+1;
+                } else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_NAME,member_start,token_starts,token_ends,token_lines,token_columns,token_count);members=false; }
+                let member_type:i64=FULL_TYPE_NAMED;
+                if members&&kind==TK_STRUCT {
+                    if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COLON { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                    else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);members=false; }
+                    if members&&state[FULL_STATE_POS]<token_count { member_type=full_type_from_token(token_kinds[state[FULL_STATE_POS]]); }
+                    if members&&member_type!=FULL_TYPE_UNKNOWN { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                    else if members { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TYPE,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);members=false; }
+                }
+                if members {
+                    let member_kind:i64=FULL_AST_FIELD;if kind==TK_ENUM { member_kind=FULL_AST_VARIANT; }
+                    full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                        ast_name_starts,ast_name_lengths,ast_scopes,member_kind,declaration,member_start,state[FULL_STATE_POS]-1,
+                        member_type,0,member_name_start,member_name_length);
+                }
+                if members&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_COMMA { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+                else if members&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count);members=false; }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if declaration>=0 { ast_lasts[declaration]=state[FULL_STATE_POS]-1; }
+        } else if kind==TK_LBRACE&&modifier==TK_COMPTIME {
+            let block:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,
+                ast_name_starts,ast_name_lengths,ast_scopes,FULL_AST_COMPTIME_BLOCK,root,origin,origin,FULL_TYPE_VOID,modifier,0,0);
+            state[FULL_STATE_POS]=pos+1;
+            let previous_block:i64=full_open_scope(state,scope_parents);
+            let block_statements:bool=true;
+            while block_statements&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let before_block:i64=state[FULL_STATE_POS];
+                full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,block);
+                if state[FULL_STATE_POS]<=before_block { state[FULL_STATE_POS]=before_block+1;full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,before_block,token_starts,token_ends,token_lines,token_columns,token_count); }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            state[FULL_STATE_SCOPE]=previous_block;if block>=0 { ast_lasts[block]=state[FULL_STATE_POS]-1; }
+        } else if kind==TK_TEST {
+            state[FULL_STATE_POS]=pos+1;
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_STRING { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let test_node:i64=full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                FULL_AST_TEST,root,origin,origin,FULL_TYPE_VOID,modifier,0,0);
+            let previous_test:i64=full_open_scope(state,scope_parents);
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_LBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_TOKEN,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            let test_statements:bool=true;
+            while test_statements&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_RBRACE&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                let before_test:i64=state[FULL_STATE_POS];
+                full_parse_statement(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,token_count,state,scope_parents,
+                    ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                    diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,test_node);
+                if state[FULL_STATE_POS]<=before_test { state[FULL_STATE_POS]=before_test+1;full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,before_test,token_starts,token_ends,token_lines,token_columns,token_count); }
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_RBRACE { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            else { full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNCLOSED_BLOCK,state[FULL_STATE_POS],token_starts,token_ends,token_lines,token_columns,token_count); }
+            if test_node>=0 { ast_lasts[test_node]=state[FULL_STATE_POS]-1; }
+            state[FULL_STATE_SCOPE]=previous_test;
+        } else {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_EXPECTED_DECL,pos,
+                token_starts,token_ends,token_lines,token_columns,token_count);
+            let recovering:bool=true;
+            while recovering&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]!=TK_SEMI&&token_kinds[state[FULL_STATE_POS]]!=TK_EOF {
+                state[FULL_STATE_POS]=state[FULL_STATE_POS]+1;
+            }
+            if state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_SEMI { state[FULL_STATE_POS]=state[FULL_STATE_POS]+1; }
+            full_node(state,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,ast_name_lengths,ast_scopes,
+                FULL_AST_ERROR,root,origin,state[FULL_STATE_POS]-1,FULL_TYPE_UNKNOWN,0,0,0);
+        }
+        if state[FULL_STATE_POS]<=origin&&state[FULL_STATE_POS]<token_count {
+            full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_PROGRESS,origin,
+                token_starts,token_ends,token_lines,token_columns,token_count);
+            state[FULL_STATE_POS]=origin+1;
+        }
+    }
+
+    let finished:bool=state[FULL_STATE_FATAL]==0&&state[FULL_STATE_POS]<token_count&&token_kinds[state[FULL_STATE_POS]]==TK_EOF;
+    return FullParseReport{finished:finished,clean:finished&&state[FULL_STATE_DIAG_COUNT]==0,
+        token_count:token_count,ast_count:state[FULL_STATE_AST_COUNT],diagnostic_count:state[FULL_STATE_DIAG_COUNT],
+        scope_count:state[FULL_STATE_NEXT_SCOPE]};
+}

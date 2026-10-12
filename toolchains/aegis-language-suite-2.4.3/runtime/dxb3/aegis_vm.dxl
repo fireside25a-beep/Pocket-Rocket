@@ -1,0 +1,28 @@
+import "aegis_vm_core.dxl";
+
+fn main() -> i32 {
+    if arg_count()!=4 { return as(i32,2); }
+    let code_owner: array_i64 = read_arg_bytes(1);
+    let policy_owner: array_i64 = read_arg_bytes(2);
+    let proof_owner: array_i64 = array_new(12,0);
+    let code: slice_i64 = slice(code_owner,0,array_len(code_owner));
+    let policy: slice_i64 = slice(policy_owner,0,array_len(policy_owner));
+    let proof: slice_i64 = slice(proof_owner,0,array_len(proof_owner));
+    let rc: i32 = as(i32,0);
+    if array_len(policy)!=1 || policy[0]>A_CAP_ALL { rc=as(i32,1); }
+    else {
+        let result: AExec = a_execute(code,policy[0]);
+        if !result.ok { print_i64(result.error); rc=as(i32,1); }
+        else {
+            proof[0]=68;proof[1]=88;proof[2]=80;proof[3]=49;
+            a_store32(proof,4,result.trace);
+            a_store32(proof,8,result.steps);
+            let written: result_i64 = write_arg_bytes(3,proof);
+            if is_err(written) { rc=as(i32,1); }
+        }
+    }
+    array_free(proof_owner);
+    array_free(policy_owner);
+    array_free(code_owner);
+    return rc;
+}

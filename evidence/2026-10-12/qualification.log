@@ -1,0 +1,595 @@
+PYTHONPATH=src python -m unittest discover -s tests -v
+test_corrupt_source_is_rejected_before_conversion (test_adaptive_converter.AdaptiveConverterTests.test_corrupt_source_is_rejected_before_conversion) ... ok
+test_default_selects_measured_minimum_and_rejects_bad_configuration (test_adaptive_converter.AdaptiveConverterTests.test_default_selects_measured_minimum_and_rejects_bad_configuration) ... ok
+test_flat32_only_package_executes_exactly (test_adaptive_converter.AdaptiveConverterTests.test_flat32_only_package_executes_exactly) ... ok
+test_classification_does_not_treat_weights_or_storage_as_source (test_aegis_boundary.AegisBoundaryTests.test_classification_does_not_treat_weights_or_storage_as_source) ... ok
+test_empty_explicit_toolchain_is_unavailable (test_aegis_boundary.AegisBoundaryTests.test_empty_explicit_toolchain_is_unavailable) ... ok
+test_flat32_is_hashed_storage_only_without_decoding (test_aegis_boundary.AegisBoundaryTests.test_flat32_is_hashed_storage_only_without_decoding) ... ok
+test_pocket_rocket_is_verified_storage_only_and_never_run (test_aegis_boundary.AegisBoundaryTests.test_pocket_rocket_is_verified_storage_only_and_never_run) ... ok
+test_run_stage_rejects_storage_before_capability_lookup (test_aegis_boundary.AegisBoundaryTests.test_run_stage_rejects_storage_before_capability_lookup) ... ok
+test_source_gate_rejects_model_weights_storage_and_unknown (test_aegis_boundary.AegisBoundaryTests.test_source_gate_rejects_model_weights_storage_and_unknown) ... ok
+test_storage_inspection_rejects_invalid_container (test_aegis_boundary.AegisBoundaryTests.test_storage_inspection_rejects_invalid_container) ... ok
+test_negative_rejected (test_aegis_c2r_live.C2RLiveTests.test_negative_rejected) ... ok
+test_positive_check_and_real_rust_translation (test_aegis_c2r_live.C2RLiveTests.test_positive_check_and_real_rust_translation) ... ok
+test_storage_and_collision_rejection (test_aegis_c2r_live.C2RLiveTests.test_storage_and_collision_rejection) ... ok
+test_real_dxasm_verified_vm (test_aegis_runtime.AegisRuntimeTests.test_real_dxasm_verified_vm) ... ok
+test_real_dxl_native_compiler (test_aegis_runtime.AegisRuntimeTests.test_real_dxl_native_compiler) ... ok
+test_real_dxs_verified_vm (test_aegis_runtime.AegisRuntimeTests.test_real_dxs_verified_vm) ... ok
+test_real_negative_corpus_rejected (test_aegis_runtime.AegisRuntimeTests.test_real_negative_corpus_rejected) ... ok
+test_reject_weights_storage_unknown_and_nonexistent (test_aegis_runtime.AegisRuntimeTests.test_reject_weights_storage_unknown_and_nonexistent) ... ok
+test_source_mutation_changes_output (test_aegis_runtime.AegisRuntimeTests.test_source_mutation_changes_output) ... ok
+test_cli_plan_is_connected_without_a_model_or_test_double (test_agent_fabric.AgentFabricTests.test_cli_plan_is_connected_without_a_model_or_test_double) ... ok
+test_consensus_exercises_all_three_real_states (test_agent_fabric.AgentFabricTests.test_consensus_exercises_all_three_real_states) ... ok
+test_every_limit_boundary_fails_closed (test_agent_fabric.AgentFabricTests.test_every_limit_boundary_fails_closed) ... ok
+test_executor_rejects_alternate_or_simulated_transports (test_agent_fabric.AgentFabricTests.test_executor_rejects_alternate_or_simulated_transports) ... ok
+test_fabric_is_total_unique_and_reproducible (test_agent_fabric.AgentFabricTests.test_fabric_is_total_unique_and_reproducible) ... ok
+test_hypervector_has_exact_width_similarity_and_validation (test_agent_fabric.AgentFabricTests.test_hypervector_has_exact_width_similarity_and_validation) ... ok
+test_plan_is_budgeted_recursive_and_certified (test_agent_fabric.AgentFabricTests.test_plan_is_budgeted_recursive_and_certified) ... ok
+test_routing_is_stable_bounded_and_role_scoped (test_agent_fabric.AgentFabricTests.test_routing_is_stable_bounded_and_role_scoped) ... ok
+test_run_certificate_verifier_rejects_tampering (test_agent_fabric.AgentFabricTests.test_run_certificate_verifier_rejects_tampering) ... ok
+test_decide_output_can_be_verified_and_attested (test_attest_nprq_verify.AttestationAndNPRQVerifyTests.test_decide_output_can_be_verified_and_attested) ... ok
+test_nprq_monotonicity_is_recomputed_from_source (test_attest_nprq_verify.AttestationAndNPRQVerifyTests.test_nprq_monotonicity_is_recomputed_from_source) ... ok
+test_real_npz_ssm_checkpoint_comparison_is_connected (test_attest_nprq_verify.AttestationAndNPRQVerifyTests.test_real_npz_ssm_checkpoint_comparison_is_connected) ... ok
+test_candidate_acceptance_and_exact_fallback (test_binary32.Binary32Tests.test_candidate_acceptance_and_exact_fallback) ... ok
+test_candidate_bad_bits_and_inputs_are_rejected_to_fallback (test_binary32.Binary32Tests.test_candidate_bad_bits_and_inputs_are_rejected_to_fallback) ... ok
+test_dot_product_order_is_explicit_and_pairwise_is_distinct (test_binary32.Binary32Tests.test_dot_product_order_is_explicit_and_pairwise_is_distinct) ... ok
+test_edge_case_labels_cover_required_ieee_branches (test_binary32.Binary32Tests.test_edge_case_labels_cover_required_ieee_branches) ... ok
+test_generator_writes_identical_bytes (test_binary32.Binary32Tests.test_generator_writes_identical_bytes) ... ok
+test_stable_vector_file_and_exact_reference_results (test_binary32.Binary32Tests.test_stable_vector_file_and_exact_reference_results) ... ok
+test_identity_distance (test_codes.CodeTests.test_identity_distance) ... ok
+test_one_bit (test_codes.CodeTests.test_one_bit) ... ok
+test_stable_and_sized (test_codes.CodeTests.test_stable_and_sized) ... ok
+test_active_set_growth_is_monotonic (test_collapse_scheduler.CollapseSchedulerTests.test_active_set_growth_is_monotonic) ... ok
+test_committed_coupling_edge_closes_transitively (test_collapse_scheduler.CollapseSchedulerTests.test_committed_coupling_edge_closes_transitively) ... ok
+test_coupling_group_closes_exactly (test_collapse_scheduler.CollapseSchedulerTests.test_coupling_group_closes_exactly) ... ok
+test_missing_or_invalid_certificate_falls_back_to_all_experts (test_collapse_scheduler.CollapseSchedulerTests.test_missing_or_invalid_certificate_falls_back_to_all_experts) ... ok
+test_repeatable_exact_fraction_weights_and_threshold (test_collapse_scheduler.CollapseSchedulerTests.test_repeatable_exact_fraction_weights_and_threshold) ... ok
+test_validation_rejects_non_256_bit_distance_or_inexact_threshold (test_collapse_scheduler.CollapseSchedulerTests.test_validation_rejects_non_256_bit_distance_or_inexact_threshold) ... ok
+test_accept_and_reject (test_contracts.ContractTests.test_accept_and_reject) ... ok
+test_official_source_inventory_is_rehashed (test_converter_integrity.ConverterIntegrityTests.test_official_source_inventory_is_rehashed) ... ok
+test_resume_record_requires_hashes_and_expected_name (test_converter_integrity.ConverterIntegrityTests.test_resume_record_requires_hashes_and_expected_name) ... ok
+test_build_target_and_report_are_fail_closed_types (test_ds4_runtime.DS4RuntimeTests.test_build_target_and_report_are_fail_closed_types) ... ok
+test_origin_normalization_is_narrow (test_ds4_runtime.DS4RuntimeTests.test_origin_normalization_is_narrow) ... ok
+test_product_command_is_exact_cpu_ssd_8k_2k (test_ds4_runtime.DS4RuntimeTests.test_product_command_is_exact_cpu_ssd_8k_2k) ... ok
+test_runtime_identity_and_ram_cap_are_exact (test_ds4_runtime.DS4RuntimeTests.test_runtime_identity_and_ram_cap_are_exact) ... ok
+test_token_profiles_are_bounded_and_reserve_prompt_space (test_ds4_runtime.DS4RuntimeTests.test_token_profiles_are_bounded_and_reserve_prompt_space) ... ok
+test_recursive_controller_uses_committed_envelope_cache (test_envelope.ControllerEnvelopeTests.test_recursive_controller_uses_committed_envelope_cache) ... ok
+test_cache_hit_conflict_and_immutable_persistent_lock (test_envelope.EnvelopeTests.test_cache_hit_conflict_and_immutable_persistent_lock) ... ok
+test_cron_order_and_retry_budget (test_envelope.EnvelopeTests.test_cron_order_and_retry_budget) ... ok
+test_disagreement_requires_explicit_judge (test_envelope.EnvelopeTests.test_disagreement_requires_explicit_judge) ... ok
+test_exact_identity_is_default_and_normalization_is_explicit (test_envelope.EnvelopeTests.test_exact_identity_is_default_and_normalization_is_explicit) ... ok
+test_exact_stress_profiles_and_shock_boundary (test_envelope.EnvelopeTests.test_exact_stress_profiles_and_shock_boundary) ... ok
+test_history_hash_excludes_wall_clock_but_chain_detects_tamper (test_envelope.EnvelopeTests.test_history_hash_excludes_wall_clock_but_chain_detects_tamper) ... ok
+test_install_refusals_happen_before_network_mutation (test_failure_lab.FailureLabTests.test_install_refusals_happen_before_network_mutation) ... ok
+test_interrupted_install_recovery_and_atomic_manifest (test_failure_lab.FailureLabTests.test_interrupted_install_recovery_and_atomic_manifest) ... ok
+test_real_process_tree_rss_timeout_term_kill_exit_and_empty_output (test_failure_lab.FailureLabTests.test_real_process_tree_rss_timeout_term_kill_exit_and_empty_output) ... ok
+test_recursion_trace_proves_depth_and_all_budgets (test_failure_lab.FailureLabTests.test_recursion_trace_proves_depth_and_all_budgets) ... ok
+test_runtime_contract_corruption_cli_and_revision_recovery (test_failure_lab.FailureLabTests.test_runtime_contract_corruption_cli_and_revision_recovery) ... ok
+test_break_even_coverage_is_explicit (test_flat32_accounting.Flat32AccountingTests.test_break_even_coverage_is_explicit) ... ok
+test_invalid_counts_rejected (test_flat32_accounting.Flat32AccountingTests.test_invalid_counts_rejected) ... ok
+test_recalled_counts_and_formula (test_flat32_accounting.Flat32AccountingTests.test_recalled_counts_and_formula) ... ok
+test_target_dictionary_ratio_is_not_explained_by_32d (test_flat32_accounting.Flat32AccountingTests.test_target_dictionary_ratio_is_not_explained_by_32d) ... ok
+test_bounded_trainer_uses_only_configured_prefix (test_flat_dictionary.FlatDictionaryTests.test_bounded_trainer_uses_only_configured_prefix) ... ok
+test_corruption_tail_framing_and_bounds_fail_closed (test_flat_dictionary.FlatDictionaryTests.test_corruption_tail_framing_and_bounds_fail_closed) ... ok
+test_dictionary_limits_and_immutable_identity (test_flat_dictionary.FlatDictionaryTests.test_dictionary_limits_and_immutable_identity) ... ok
+test_exact_roundtrip_tail_and_wrong_dictionary (test_flat_dictionary.FlatDictionaryTests.test_exact_roundtrip_tail_and_wrong_dictionary) ... ok
+test_reported_hybrid_ratio_and_dictionary_cost (test_flat_dictionary.FlatDictionaryTests.test_reported_hybrid_ratio_and_dictionary_cost) ... ok
+test_standalone_dictionary_serialization_is_exact (test_flat_dictionary.FlatDictionaryTests.test_standalone_dictionary_serialization_is_exact) ... ok
+test_streaming_file_encoder_matches_memory_format (test_flat_dictionary.FlatDictionaryTests.test_streaming_file_encoder_matches_memory_format) ... ok
+test_trainer_is_deterministic_and_tie_ordered (test_flat_dictionary.FlatDictionaryTests.test_trainer_is_deterministic_and_tie_ordered) ... ok
+test_accelerated_arithmetic_requires_matching_oracle_digest (test_host_preflight.HostPreflightTests.test_accelerated_arithmetic_requires_matching_oracle_digest) ... ok
+test_flag_aliases_and_v3_classification (test_host_preflight.HostPreflightTests.test_flag_aliases_and_v3_classification) ... ok
+test_non_x86_and_incomplete_baseline_fail_closed (test_host_preflight.HostPreflightTests.test_non_x86_and_incomplete_baseline_fail_closed) ... ok
+test_read_only_report_disables_gpu_and_privileged_tuning (test_host_preflight.HostPreflightTests.test_read_only_report_disables_gpu_and_privileged_tuning) ... ok
+test_require_rejects_non_linux_or_gpu_state (test_host_preflight.HostPreflightTests.test_require_rejects_non_linux_or_gpu_state) ... ok
+test_x87_requires_matching_oracle_digest_and_integer_is_default (test_host_preflight.HostPreflightTests.test_x87_requires_matching_oracle_digest_and_integer_is_default) ... ok
+test_256_expert_top6_recursive_plan_and_cache_are_repeatable (test_lbit_runtime.LbitRuntimeTests.test_256_expert_top6_recursive_plan_and_cache_are_repeatable) ... ok
+test_certificate_missing_falls_back_and_budget_rejects_overcommit (test_lbit_runtime.LbitRuntimeTests.test_certificate_missing_falls_back_and_budget_rejects_overcommit) ... ok
+test_certificate_must_match_page_committed_bounds (test_lbit_runtime.LbitRuntimeTests.test_certificate_must_match_page_committed_bounds) ... ok
+test_committed_coupling_closure_can_expand_beyond_top6 (test_lbit_runtime.LbitRuntimeTests.test_committed_coupling_closure_can_expand_beyond_top6) ... ok
+test_tamper_fails_closed_to_all_256 (test_lbit_runtime.LbitRuntimeTests.test_tamper_fails_closed_to_all_256) ... ok
+test_disabled_and_error_force_full_pipeline_without_promotion (test_lumus_arh.LumusARHTests.test_disabled_and_error_force_full_pipeline_without_promotion) ... ok
+test_history_is_bounded_and_reset_is_complete (test_lumus_arh.LumusARHTests.test_history_is_bounded_and_reset_is_complete) ... ok
+test_reset_clears_cache_and_ephemeral_context (test_lumus_arh.LumusARHTests.test_reset_clears_cache_and_ephemeral_context) ... ok
+test_worker_failure_fails_closed_and_does_not_enter_history (test_lumus_arh.LumusARHTests.test_worker_failure_fails_closed_and_does_not_enter_history) ... ok
+test_wsgi_routes_have_canonical_json_and_loopback_surface (test_lumus_arh.LumusARHTests.test_wsgi_routes_have_canonical_json_and_loopback_surface) ... ok
+test_analysis_is_deterministic_and_binds_codec_decisions (test_model_pages.ModelPageTests.test_analysis_is_deterministic_and_binds_codec_decisions) ... ok
+test_changed_source_fails_before_cache_commit (test_model_pages.ModelPageTests.test_changed_source_fails_before_cache_commit) ... ok
+test_compressed_page_expansion_is_bounded (test_model_pages.ModelPageTests.test_compressed_page_expansion_is_bounded) ... ok
+test_corrupt_cached_page_fails_closed (test_model_pages.ModelPageTests.test_corrupt_cached_page_fails_closed) ... ok
+test_legacy_v1_page_remains_readable (test_model_pages.ModelPageTests.test_legacy_v1_page_remains_readable) ... ok
+test_oversized_or_symlinked_cache_object_is_rejected_before_read (test_model_pages.ModelPageTests.test_oversized_or_symlinked_cache_object_is_rejected_before_read) ... ok
+test_pinned_model_fits_all_outer_container_bounds (test_model_pages.ModelPageTests.test_pinned_model_fits_all_outer_container_bounds) ... ok
+test_range_and_manifest_bounds (test_model_pages.ModelPageTests.test_range_and_manifest_bounds) ... ok
+test_shuffle_roundtrip_and_exact_smallest_candidate (test_model_pages.ModelPageTests.test_shuffle_roundtrip_and_exact_smallest_candidate) ... ok
+test_static_and_demand_share_root_and_bytes (test_model_pages.ModelPageTests.test_static_and_demand_share_root_and_bytes) ... ok
+test_target_contract_is_pinned (test_model_target.ModelTargetTests.test_target_contract_is_pinned) ... ok
+test_wrong_file_fails_before_hash_is_accepted (test_model_target.ModelTargetTests.test_wrong_file_fails_before_hash_is_accepted) ... ok
+test_wrong_name_fails_closed (test_model_target.ModelTargetTests.test_wrong_name_fails_closed) ... ok
+test_256_bit_route_is_repeatable (test_moefication.MoEficationTests.test_256_bit_route_is_repeatable) ... ok
+test_all_experts_exactly_reconstruct_dense (test_moefication.MoEficationTests.test_all_experts_exactly_reconstruct_dense) ... ok
+test_contribution_bound_is_a_real_certificate (test_moefication.MoEficationTests.test_contribution_bound_is_a_real_certificate) ... ok
+test_precision_delta_bound_is_a_real_certificate (test_moefication.MoEficationTests.test_precision_delta_bound_is_a_real_certificate) ... ok
+test_silu_is_finite_for_large_negative_values (test_moefication.MoEficationTests.test_silu_is_finite_for_large_negative_values) ... ok
+test_attention_fixed_dot_order_and_mask (test_neural_math.NeuralMathTests.test_attention_fixed_dot_order_and_mask) ... ok
+test_exp_and_silu_are_fixed_and_cover_nonfinite_edges (test_neural_math.NeuralMathTests.test_exp_and_silu_are_fixed_and_cover_nonfinite_edges) ... ok
+test_rmsnorm_order_shape_and_signed_zero (test_neural_math.NeuralMathTests.test_rmsnorm_order_shape_and_signed_zero) ... ok
+test_softmax_mask_nonfinite_and_stable_order (test_neural_math.NeuralMathTests.test_softmax_mask_nonfinite_and_stable_order) ... ok
+test_chunked_encoding_handles_empty_and_large_inputs (test_nprq.NPRQTests.test_chunked_encoding_handles_empty_and_large_inputs) ... ok
+test_hash_corruption_rejected (test_nprq.NPRQTests.test_hash_corruption_rejected) ... ok
+test_metadata_length_and_traversal_rejected (test_nprq.NPRQTests.test_metadata_length_and_traversal_rejected) ... ok
+test_nonfinite_source_rejected (test_nprq.NPRQTests.test_nonfinite_source_rejected) ... ok
+test_pack_round_trip (test_nprq.NPRQTests.test_pack_round_trip) ... ok
+test_pocket_pack_stage_decodes_to_identical_tensor (test_nprq.NPRQTests.test_pocket_pack_stage_decodes_to_identical_tensor) ... ok
+test_progressive_error_is_monotonic (test_nprq.NPRQTests.test_progressive_error_is_monotonic) ... ok
+test_ternary_payload_rejects_length_codes_and_noncanonical_padding (test_nprq.NPRQTests.test_ternary_payload_rejects_length_codes_and_noncanonical_padding) ... ok
+test_corruption_and_truncation_are_rejected (test_pocket_pack.PocketRocketTests.test_corruption_and_truncation_are_rejected) ... ok
+test_decompression_expansion_is_bounded (test_pocket_pack.PocketRocketTests.test_decompression_expansion_is_bounded) ... ok
+test_deterministic_bytes_and_codec_choice (test_pocket_pack.PocketRocketTests.test_deterministic_bytes_and_codec_choice) ... ok
+test_output_alias_is_rejected_without_source_damage (test_pocket_pack.PocketRocketTests.test_output_alias_is_rejected_without_source_damage) ... ok
+test_roundtrip_random_chunk_access_and_range (test_pocket_pack.PocketRocketTests.test_roundtrip_random_chunk_access_and_range) ... ok
+test_strict_index_bounds_and_reader_limits (test_pocket_pack.PocketRocketTests.test_strict_index_bounds_and_reader_limits) ... ok
+test_trailing_bytes_rejected (test_pocket_pack.PocketRocketTests.test_trailing_bytes_rejected) ... ok
+test_conversion_preserves_decoded_tensor_and_manifest_scope (test_pocket_pack_converter.PocketPackConverterTests.test_conversion_preserves_decoded_tensor_and_manifest_scope) ... ok
+test_corrupt_source_stage_is_rejected (test_pocket_pack_converter.PocketPackConverterTests.test_corrupt_source_stage_is_rejected) ... ok
+test_budget_scenarios_are_byte_accounted (test_pocket_rocket.PocketRocketFeasibilityTests.test_budget_scenarios_are_byte_accounted) ... ok
+test_deepseek_geometry_and_provenance_are_explicit (test_pocket_rocket.PocketRocketFeasibilityTests.test_deepseek_geometry_and_provenance_are_explicit) ... ok
+test_exact_ds4_context_ladder_is_nonzero_and_monotonic (test_pocket_rocket.PocketRocketFeasibilityTests.test_exact_ds4_context_ladder_is_nonzero_and_monotonic) ... ok
+test_invalid_and_impossible_inputs_rejected (test_pocket_rocket.PocketRocketFeasibilityTests.test_invalid_and_impossible_inputs_rejected) ... ok
+test_product_context_accounting_costs_about_118_mib (test_pocket_rocket.PocketRocketFeasibilityTests.test_product_context_accounting_costs_about_118_mib) ... ok
+test_storage_and_active_ram_are_separate (test_pocket_rocket.PocketRocketFeasibilityTests.test_storage_and_active_ram_are_separate) ... ok
+test_strict_ram_admission_fails_closed (test_pocket_rocket.PocketRocketFeasibilityTests.test_strict_ram_admission_fails_closed) ... ok
+test_output_is_reproducible_source_only_and_self_verifying (test_release_builder.SourceReleaseBuilderTests.test_output_is_reproducible_source_only_and_self_verifying) ... ok
+test_symlink_is_rejected (test_release_builder.SourceReleaseBuilderTests.test_symlink_is_rejected) ... ok
+test_archives_only_manifest_referenced_stages (test_release_packer.ReleasePackerTests.test_archives_only_manifest_referenced_stages) ... ok
+test_5000_indexed_routes_equal_linear_hamming_routes (test_spatial_pool.SpatialPoolTests.test_5000_indexed_routes_equal_linear_hamming_routes) ... ok
+test_compatibility_filter_matches_linear_router (test_spatial_pool.SpatialPoolTests.test_compatibility_filter_matches_linear_router) ... ok
+test_primary_hash_collision_requires_full_coordinate_match (test_spatial_pool.SpatialPoolTests.test_primary_hash_collision_requires_full_coordinate_match) ... ok
+test_splitmix_and_bucket_are_stable (test_spatial_pool.SpatialPoolTests.test_splitmix_and_bucket_are_stable) ... ok
+test_compatibility_filter (test_store_router.StoreRouterTests.test_compatibility_filter) ... ok
+test_payload_corruption_rejected (test_store_router.StoreRouterTests.test_payload_corruption_rejected) ... ok
+test_repeatable (test_store_router.StoreRouterTests.test_repeatable) ... ok
+test_tie_break_is_id (test_store_router.StoreRouterTests.test_tie_break_is_id) ... ok
+test_calibrated_centroid_is_exercised (test_surface_connections.SurfaceConnectionTests.test_calibrated_centroid_is_exercised) ... ok
+test_envelope_stress_profiles_are_exercised (test_surface_connections.SurfaceConnectionTests.test_envelope_stress_profiles_are_exercised) ... ok
+test_dot_and_gate_are_machine_readable (test_ternary_cli.TernaryCliTests.test_dot_and_gate_are_machine_readable) ... ok
+test_manifest_demand_read_and_static_import (test_ternary_cli.TernaryCliTests.test_manifest_demand_read_and_static_import) ... ok
+test_model_outputs_cannot_overwrite_inputs_or_enter_store (test_ternary_cli.TernaryCliTests.test_model_outputs_cannot_overwrite_inputs_or_enter_store) ... ok
+test_route_decision_binds_local_router_to_certificate (test_ternary_cli.TernaryCliTests.test_route_decision_binds_local_router_to_certificate) ... ok
+test_integer_quantization_has_real_zero_state (test_ternary_exact.ExactArithmeticTests.test_integer_quantization_has_real_zero_state) ... ok
+test_pack_roundtrip_and_reserved_symbol (test_ternary_exact.ExactArithmeticTests.test_pack_roundtrip_and_reserved_symbol) ... ok
+test_rational_and_dyadic_are_reduced (test_ternary_exact.ExactArithmeticTests.test_rational_and_dyadic_are_reduced) ... ok
+test_sign_plane_dot_matches_scalar (test_ternary_exact.ExactArithmeticTests.test_sign_plane_dot_matches_scalar) ... ok
+test_triadic_is_canonical_and_exact (test_ternary_exact.ExactArithmeticTests.test_triadic_is_canonical_and_exact) ... ok
+test_certificate_is_deterministic_and_evidence_sensitive (test_ternary_exact.TypedDecisionTests.test_certificate_is_deterministic_and_evidence_sensitive) ... ok
+test_choice_abstains_on_tie_or_small_margin (test_ternary_exact.TypedDecisionTests.test_choice_abstains_on_tie_or_small_margin) ... ok
+test_gate_has_three_semantic_states (test_ternary_exact.TypedDecisionTests.test_gate_has_three_semantic_states) ... ok
+test_invalid_gate_threshold_order_fails (test_ternary_exact.TypedDecisionTests.test_invalid_gate_threshold_order_fails) ... ok
+test_ordered_score_abstains_on_tie_or_confidence_gate (test_ternary_exact.TypedDecisionTests.test_ordered_score_abstains_on_tie_or_confidence_gate) ... ok
+test_ordered_score_returns_exact_distribution_and_confidence (test_ternary_exact.TypedDecisionTests.test_ordered_score_returns_exact_distribution_and_confidence) ... ok
+test_runtime_and_distribution_versions_match (test_version.VersionTests.test_runtime_and_distribution_versions_match) ... ok
+
+----------------------------------------------------------------------
+Ran 169 tests in 15.260s
+
+OK
+BASE /tmp/tmp2g38klwp/releases/DeepSeek-V4-Flash-NeuroRoute-NPRQ-base-s0.zip bytes=2263
+OVERLAY /tmp/tmp2g38klwp/releases/DeepSeek-V4-Flash-NeuroRoute-NPRQ-residual-s1plus.zip bytes=888
+Extract the overlay onto the base to enable all residual stages.
+BASE /tmp/tmp8rs8fdnj/releases/DeepSeek-V4-Flash-NeuroRoute-NPRQ-base-s0.zip bytes=1620
+OVERLAY /tmp/tmp8rs8fdnj/releases/DeepSeek-V4-Flash-NeuroRoute-NPRQ-residual-s1plus.zip bytes=644
+Extract the overlay onto the base to enable all residual stages.
+python ui/test_workspace_source.py -v
+test_git_mutations_require_explicit_commit_confirmation (__main__.WorkspaceSourceContract.test_git_mutations_require_explicit_commit_confirmation) ... ok
+test_local_routes_are_explicit (__main__.WorkspaceSourceContract.test_local_routes_are_explicit) ... ok
+test_no_model_or_cloud_client_is_embedded (__main__.WorkspaceSourceContract.test_no_model_or_cloud_client_is_embedded) ... ok
+test_save_is_bounded_and_atomic (__main__.WorkspaceSourceContract.test_save_is_bounded_and_atomic) ... ok
+test_subprocesses_do_not_use_shell_interpolation (__main__.WorkspaceSourceContract.test_subprocesses_do_not_use_shell_interpolation) ... ok
+test_workspace_has_real_actions (__main__.WorkspaceSourceContract.test_workspace_has_real_actions) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.001s
+
+OK
+sh -n scripts/run_user_daemon.sh
+python scripts/runtime_surface_audit.py
+RUNTIME SURFACE AUDIT PASS: imports resolve; no simulated production dependencies; public Python and nr_* C surfaces are connected
+make -C native clean
+make[1]: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+rm -f test_native test_envelope test_pocket_rocket test_flat32 test_flat32_dict test_binary32 test_t39_lbit test_ternary_core test_ternary_tcam test_ternary_ssm test_hamming_router test_native-asan test_envelope-asan test_pocket_rocket-asan test_flat32-asan test_flat32_dict-asan test_binary32-asan test_t39_lbit-asan test_ternary_core-asan test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_native-clang test_envelope-clang test_pocket_rocket-clang test_flat32-clang test_flat32_dict-clang test_binary32-clang test_t39_lbit-clang test_ternary_core-clang .native_test_page.nprq .native_test_empty.nprq .native_pocket_empty.pkr .native_pocket_fixture.pkr .native_pocket_corrupt.pkr .native_pocket_truncated.pkr .native_pocket_trailing.pkr .native_pocket_bomb.pkr test_ternary_tcam-asan test_ternary_ssm-asan test_hamming_router-asan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan test_ternary_tcam-clang test_ternary_ssm-clang test_hamming_router-clang test_ternary_tcam-avx2
+make[1]: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+make -C native test test-asan test-ubsan
+make[1]: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c test_native.c -lm -o test_native
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c envelope.c test_envelope.c -lm -o test_envelope
+cc -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c test_flat32.c -lm -o test_flat32
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c test_binary32.c -lm -o test_binary32
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c test_ternary_core.c -lm -o test_ternary_core
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror hamming_router.c test_hamming_router.c -lm -o test_hamming_router
+./test_native
+native tests: PASS
+./test_envelope
+envelope tests: PASS (N=1000 profiles)
+./test_pocket_rocket
+Pocket Rocket tests: PASS
+./test_flat32
+Flat32 tests: PASS
+./test_flat32_dict
+flat32 dictionary tests: ok
+./test_binary32
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+./test_t39_lbit
+T39 Lbit bridge tests: ok
+./test_ternary_core
+exact ternary core tests: PASS
+./test_ternary_tcam
+ternary_tcam: PASS
+./test_ternary_ssm
+ternary_ssm: PASS
+./test_hamming_router
+hamming_router: PASS
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c test_native.c -lm -o test_native-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c envelope.c test_envelope.c -lm -o test_envelope-asan
+cc -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c flat32.c test_flat32.c -lm -o test_flat32-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer binary32.c test_binary32.c -lm -o test_binary32-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer ternary_core.c test_ternary_core.c -lm -o test_ternary_core-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer hamming_router.c test_hamming_router.c -lm -o test_hamming_router-asan
+ASAN_OPTIONS=detect_leaks=0 ./test_native-asan
+native tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_envelope-asan
+envelope tests: PASS (N=1000 profiles)
+ASAN_OPTIONS=detect_leaks=0 ./test_pocket_rocket-asan
+Pocket Rocket tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_flat32-asan
+Flat32 tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_flat32_dict-asan
+flat32 dictionary tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_binary32-asan
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_t39_lbit-asan
+T39 Lbit bridge tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_core-asan
+exact ternary core tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_tcam-asan
+ternary_tcam: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_ssm-asan
+ternary_ssm: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_hamming_router-asan
+hamming_router: PASS
+rm -f test_native-asan test_envelope-asan test_pocket_rocket-asan test_flat32-asan test_flat32_dict-asan test_binary32-asan test_t39_lbit-asan test_ternary_core-asan test_ternary_tcam-asan test_ternary_ssm-asan test_hamming_router-asan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c test_native.c -lm -o test_native-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c envelope.c test_envelope.c -lm -o test_envelope-ubsan
+cc -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c flat32.c test_flat32.c -lm -o test_flat32-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer binary32.c test_binary32.c -lm -o test_binary32-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer ternary_core.c test_ternary_core.c -lm -o test_ternary_core-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm-ubsan
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer hamming_router.c test_hamming_router.c -lm -o test_hamming_router-ubsan
+chmod u+x test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan
+./test_native-ubsan
+native tests: PASS
+./test_envelope-ubsan
+envelope tests: PASS (N=1000 profiles)
+./test_pocket_rocket-ubsan
+Pocket Rocket tests: PASS
+./test_flat32-ubsan
+Flat32 tests: PASS
+./test_flat32_dict-ubsan
+flat32 dictionary tests: ok
+./test_binary32-ubsan
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+./test_t39_lbit-ubsan
+T39 Lbit bridge tests: ok
+./test_ternary_core-ubsan
+exact ternary core tests: PASS
+./test_ternary_tcam-ubsan
+ternary_tcam: PASS
+./test_ternary_ssm-ubsan
+ternary_ssm: PASS
+./test_hamming_router-ubsan
+hamming_router: PASS
+rm -f test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan
+make[1]: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+make -C native clean
+make[1]: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+rm -f test_native test_envelope test_pocket_rocket test_flat32 test_flat32_dict test_binary32 test_t39_lbit test_ternary_core test_ternary_tcam test_ternary_ssm test_hamming_router test_native-asan test_envelope-asan test_pocket_rocket-asan test_flat32-asan test_flat32_dict-asan test_binary32-asan test_t39_lbit-asan test_ternary_core-asan test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_native-clang test_envelope-clang test_pocket_rocket-clang test_flat32-clang test_flat32_dict-clang test_binary32-clang test_t39_lbit-clang test_ternary_core-clang .native_test_page.nprq .native_test_empty.nprq .native_pocket_empty.pkr .native_pocket_fixture.pkr .native_pocket_corrupt.pkr .native_pocket_truncated.pkr .native_pocket_trailing.pkr .native_pocket_bomb.pkr test_ternary_tcam-asan test_ternary_ssm-asan test_hamming_router-asan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan test_ternary_tcam-clang test_ternary_ssm-clang test_hamming_router-clang test_ternary_tcam-avx2
+make[1]: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+PYTHONPATH=src python -m unittest tests.test_aegis_runtime tests.test_aegis_c2r_live -v
+test_real_dxasm_verified_vm (tests.test_aegis_runtime.AegisRuntimeTests.test_real_dxasm_verified_vm) ... ok
+test_real_dxl_native_compiler (tests.test_aegis_runtime.AegisRuntimeTests.test_real_dxl_native_compiler) ... ok
+test_real_dxs_verified_vm (tests.test_aegis_runtime.AegisRuntimeTests.test_real_dxs_verified_vm) ... ok
+test_real_negative_corpus_rejected (tests.test_aegis_runtime.AegisRuntimeTests.test_real_negative_corpus_rejected) ... ok
+test_reject_weights_storage_unknown_and_nonexistent (tests.test_aegis_runtime.AegisRuntimeTests.test_reject_weights_storage_unknown_and_nonexistent) ... ok
+test_source_mutation_changes_output (tests.test_aegis_runtime.AegisRuntimeTests.test_source_mutation_changes_output) ... ok
+test_negative_rejected (tests.test_aegis_c2r_live.C2RLiveTests.test_negative_rejected) ... ok
+test_positive_check_and_real_rust_translation (tests.test_aegis_c2r_live.C2RLiveTests.test_positive_check_and_real_rust_translation) ... ok
+test_storage_and_collision_rejection (tests.test_aegis_c2r_live.C2RLiveTests.test_storage_and_collision_rejection) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.535s
+
+OK
+make -C toolchains/aegis-language-suite-2.4.3 check
+make[1]: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-language-suite-2.4.3'
+./scripts/setup.sh
+Aegis toolchain ready: /mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-language-suite-2.4.3/build/bin
+./scripts/test.sh
+PASS  DXL check
+PASS  DXL TIR A
+PASS  DXL TIR B
+PASS  DXL TIR byte identity
+PASS  DXL format check
+PASS  DXL native build A
+PASS  DXL native build B
+PASS  DXL native byte identity
+PASS  DXL native execute
+PASS  DXL native expected output
+PASS  DXL native run command
+PASS  DXL native run output
+PASS  DXL native test command
+PASS  DXL native run requires main (exact diagnostic)
+PASS  DXL native test requires test blocks (exact diagnostic)
+PASS  DXL native test forbids early return (exact diagnostic)
+PASS  DXL native build without compatibility frontend
+PASS  DXL native-only executable output
+PASS  DXL native-only expected output
+PASS  DXL native exact diagnostic (exact diagnostic)
+PASS  DXL native missing input (exact diagnostic)
+PASS  DXL native source-size preflight (exact diagnostic)
+PASS  DXL native rejected overwrite (exact diagnostic)
+PASS  DXL native rejected output preserved
+PASS  DXL native missing output directory (exact diagnostic)
+PASS  DXL native output path is directory (exact diagnostic)
+PASS  DXL check unsupported target (exact diagnostic)
+PASS  DXL TIR unsupported target (exact diagnostic)
+PASS  DXL native unsupported target (exact diagnostic)
+PASS  DXL check rejects extra option (exact diagnostic)
+PASS  DXL TIR rejects extra option (exact diagnostic)
+PASS  DXL native build rejects extra option (exact diagnostic)
+PASS  DXL native run rejects output option (exact diagnostic)
+PASS  DXL format rejects extra option (exact diagnostic)
+PASS  DXL targets rejects arguments (exact diagnostic)
+PASS  DXL version rejects arguments (exact diagnostic)
+PASS  DXS compile
+PASS  DXS audit
+PASS  DXS execute
+PASS  DXS repeat compile
+PASS  DXS byte identity
+PASS  DXASM assemble
+PASS  DXASM audit
+PASS  DXASM execute
+PASS  DXASM repeat assemble
+PASS  DXASM byte identity
+PASS  DXS extended-profile compile A
+PASS  DXS extended-profile compile B
+PASS  DXS extended-profile byte identity
+PASS  DXB3 extended-profile execute A
+PASS  DXB3 extended-profile execute B
+PASS  DXB3 extended-profile output identity
+PASS  DXB3 extended-profile expected output
+PASS  DXB3 extended-profile proof identity
+PASS  DXL positive: checked_arithmetic.dxl
+PASS  DXL positive: forward_constants.dxl
+PASS  DXL positive: ownership.dxl
+PASS  DXL positive: results.dxl
+PASS  DXL positive: target_comptime.dxl
+PASS  DXL positive: types.dxl
+PASS  DXL positive: uppercase_block_boundary.dxl
+PASS  DXL negative: array_copy.dxl (rejected)
+PASS  DXL negative: array_struct_field.dxl (rejected)
+PASS  DXL negative: branch_owner_mismatch.dxl (rejected)
+PASS  DXL negative: cast_overflow.dxl (rejected)
+PASS  DXL negative: comptime_overflow.dxl (rejected)
+PASS  DXL negative: constant_cycle.dxl (rejected)
+PASS  DXL negative: duplicate_field.dxl (rejected)
+PASS  DXL negative: duplicate_parameter.dxl (rejected)
+PASS  DXL negative: duplicate_variant.dxl (rejected)
+PASS  DXL negative: literal_overflow.dxl (rejected)
+PASS  DXL negative: loop_consumes_owner.dxl (rejected)
+PASS  DXL negative: missing_array_free.dxl (rejected)
+PASS  DXL negative: recursive_struct.dxl (rejected)
+PASS  DXL negative: slice_return.dxl (rejected)
+PASS  DXL negative: type_mismatch.dxl (rejected)
+PASS  DXL negative: unknown_name.dxl (rejected)
+PASS  DXL negative: unknown_type.dxl (rejected)
+PASS  DXL negative: use_after_free.dxl (rejected)
+PASS  DXL negative: import cycle (rejected)
+PASS  DXS positive compile: arithmetic.dxs
+PASS  DXS positive execute: arithmetic.dxs
+PASS  DXS positive compile: boundaries.dxs
+PASS  DXS positive execute: boundaries.dxs
+PASS  DXS positive compile: comments.dxs
+PASS  DXS positive execute: comments.dxs
+PASS  DXS positive compile: empty.dxs
+PASS  DXS positive execute: empty.dxs
+PASS  DXS positive compile: stack.dxs
+PASS  DXS positive execute: stack.dxs
+PASS  DXS negative compile: after_halt.dxs (rejected)
+PASS  DXS negative compile: bad_integer.dxs (rejected)
+PASS  DXS negative runtime: divzero.dxs (rejected)
+PASS  DXS negative compile: underflow.dxs (rejected)
+PASS  DXS negative compile: unknown.dxs (rejected)
+PASS  DXASM positive assemble: arithmetic.dxasm
+PASS  DXASM positive execute: arithmetic.dxasm
+PASS  DXASM positive assemble: boundaries.dxasm
+PASS  DXASM positive execute: boundaries.dxasm
+PASS  DXASM positive assemble: stack.dxasm
+PASS  DXASM positive execute: stack.dxasm
+PASS  DXASM negative: after_halt.dxasm (rejected)
+PASS  DXASM negative: bad_integer.dxasm (rejected)
+PASS  DXASM negative: underflow.dxasm (rejected)
+PASS  DXASM negative: unknown.dxasm (rejected)
+
+105 PASS / 0 FAIL
+AEGIS_NATIVE_MODE=shipped ./tests/native/test_native.sh
+PASS 01 machine-readable diagnostic map is complete and unique
+PASS 02 checksum-pinned shipped native compiler selected
+PASS 03 repeated native output is byte-identical
+PASS 04 distinct sources generate distinct executables
+PASS 05 counter native output matches
+PASS 06 branches native output matches
+PASS 07 signed native output matches
+PASS 08 static ELF has one load segment, non-executable stack, and no dynamic loader
+PASS 09 poisoned-path compile succeeds; sources contain no process-launch primitive (ptrace unavailable)
+PASS 10 multiple native test blocks execute successfully
+PASS 11 assertion-failure exits deterministically with 71
+PASS 12 add-overflow exits deterministically with 70
+PASS 13 sub-overflow exits deterministically with 70
+PASS 14 mul-overflow exits deterministically with 70
+PASS 15 neg-overflow exits deterministically with 70
+PASS 16 cast-overflow exits deterministically with 70
+PASS 17 loop-fuel exits deterministically with 72
+PASS 18 loop-fuel-boundary exits deterministically with 0
+PASS 19 loop-fuel-first-rejection exits deterministically with 72
+PASS 20 maximum-user-exit exits deterministically with 63
+PASS 21 first-reserved-user-exit exits deterministically with 73
+PASS 22 reserved-user-exit exits deterministically with 73
+PASS 23 negative-user-exit exits deterministically with 73
+PASS 24 duplicate-variable is rejected with diagnostic 2715
+PASS 25 unknown-variable is rejected with diagnostic 2716
+PASS 26 branch-scope is rejected with diagnostic 2716
+PASS 27 unsupported-entry is rejected with diagnostic 2703
+PASS 28 type-mismatch is rejected with diagnostic 2729
+PASS 29 total-return is rejected with diagnostic 2724
+PASS 30 test-early-return is rejected with diagnostic 2733
+PASS 31 nesting-limit is rejected with diagnostic 2730
+PASS 32 unary-nesting-limit is rejected with diagnostic 2730
+PASS 33 source-size-limit is rejected with diagnostic 2728
+Native profile matrix: 33 checks passed
+./scripts/test_loop_matrix.sh
+PASS  matrix case inventory
+PASS  DXL source check A
+PASS  DXL source check B
+PASS  DXL check identity
+PASS  DXL TIR A
+PASS  DXL TIR B
+PASS  DXL TIR identity
+PASS  DXL loop result represented
+PASS  DXL native build A
+PASS  DXL native build B
+PASS  DXL native executable identity
+PASS  DXL native static ELF
+PASS  DXL native execute A
+PASS  DXL native execute B
+PASS  DXL native repeat-output identity
+PASS  DXL native expected output
+PASS  DXL native evidence audit
+PASS  DXS compile A
+PASS  DXS compile B
+PASS  DXS bytecode identity
+PASS  DXS audit
+PASS  DXS execute A
+PASS  DXS execute B
+PASS  DXS proof identity
+PASS  DXS repeat-output identity
+PASS  DXS expected output
+PASS  DXASM assemble A
+PASS  DXASM assemble B
+PASS  DXASM bytecode identity
+PASS  DXASM audit
+PASS  DXASM execute A
+PASS  DXASM execute B
+PASS  DXASM proof identity
+PASS  DXASM repeat-output identity
+PASS  DXASM expected output
+PASS  DXS and DXASM semantic output identity
+PASS  DXL native and DXB3 semantic output identity
+PASS  DXS and DXASM payload identity
+PASS  DXS and DXASM proof identity
+PASS  proof manifest verification
+RESULT: 40 PASS / 0 FAIL
+./scripts/static_check.sh
+PASS  source: dxs
+PASS  source: dxasm
+PASS  source: dxvm
+PASS  source: dxaudit
+PASS  source: dxs24
+PASS  source: dxvm24
+PASS  source: DXL lexer foundation
+PASS  source: DXL parser foundation
+PASS  source: DXL object-writer foundation
+PASS  source: DXL integrated frontend foundation
+PASS  source: DXL native core compiler
+PASS  source: stdlib/deterministic_collections.dxl
+PASS  source: stdlib/serialization.dxl
+PASS  source: stdlib/validation.dxl
+PASS  source: example/comptime_fib.dxl
+PASS  source: example/hello.dxl
+PASS  source: example/stdlib_validation.dxl
+PASS  source: example/types_and_memory.dxl
+PASS  source: example/counter.dxl
+PASS  source: example/native_counter.dxl
+RESULT: 20 DXL source groups PASS / 0 FAIL
+static repository hygiene: PASS
+local documentation links: PASS
+toolchain checksums: PASS
+repository manifest: PASS
+public DXL command and target boundary: PASS
+./scripts/verify_release.sh
+release structure: PASS
+source-language hygiene: PASS
+toolchain inventory: PASS
+foundation inventory: PASS
+make[1]: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-language-suite-2.4.3'
+make -C toolchains/aegis-c2r-0.1.0 check
+make[1]: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-c2r-0.1.0'
+python3 tools/generate_semantic_vectors.py
+generated 512 semantic vectors
+python3 tools/release_gate.py
+PASS 01/37  strict GCC translator build :: 67353b4adf800397
+PASS 02/37  strict Clang translator build :: strict Clang
+PASS 03/37  GCC path-sensitive analyzer :: gcc -fanalyzer
+PASS 04/37  ASan+UBSan positive/negative corpus :: 8 positive + 18 negative
+PASS 05/37  CLI identity/version :: aegis-c2r 0.1.0 profile=S0-DEFINED-I32
+PASS 06/37  positive basic.c :: OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+PASS 07/37  positive basic_whitespace.c :: OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+PASS 08/37  positive branch_loop.c :: OK profile=S0-DEFINED-I32 functions=1 statements=9 expressions=19
+PASS 09/37  positive calls.c :: OK profile=S0-DEFINED-I32 functions=3 statements=4 expressions=12
+PASS 10/37  positive logic.c :: OK profile=S0-DEFINED-I32 functions=1 statements=6 expressions=19
+PASS 11/37  positive neg_rem.c :: OK profile=S0-DEFINED-I32 functions=1 statements=5 expressions=10
+PASS 12/37  positive precedence.c :: OK profile=S0-DEFINED-I32 functions=1 statements=4 expressions=16
+PASS 13/37  positive max_literal.c :: OK profile=S0-DEFINED-I32 functions=1 statements=3 expressions=3
+PASS 14/37  canonical AST whitespace equivalence :: 7ac3a585d72b6f0b
+PASS 15/37  deterministic Rust emission :: 823a4a60fa500640
+PASS 16/37  deterministic AST emission :: 7ac3a585d72b6f0b
+PASS 17/37  deterministic proof JSON emission :: 4410e7f2212f9873
+PASS 18/37  deterministic DXL certificate emission :: 6a899895deeca92f
+PASS 19/37  deterministic DXS certificate emission :: f95a3d7e73bddee1
+PASS 20/37  deterministic DXASM certificate emission :: c84ac406e8e1e4e9
+PASS 21/37  independent source SHA-256 binding :: 928570e49fd8a40c
+PASS 22/37  independent AST SHA-256 binding :: 7ac3a585d72b6f0b
+PASS 23/37  independent Rust SHA-256 binding :: 823a4a60fa500640
+PASS 24/37  proof schema/profile/status :: AEGIS-C2R-PROOF/1
+PASS 25/37  safe-Rust markers and checked lowering :: forbid unsafe + checked arithmetic
+PASS 26/37  18-case deterministic negative corpus :: 18/18 deterministic reject
+PASS 27/37  256 deterministic source mutations :: MUTATION_PASS total=256 accepted=11 rejected=245
+PASS 28/37  512-vector corpus inventory :: 512 deterministic cases
+PASS 29/37  arithmetic vectors GCC oracle :: gcc == expected
+PASS 30/37  arithmetic vectors Clang oracle :: clang == expected
+PASS 31/37  division/remainder vectors GCC oracle :: gcc == expected
+PASS 32/37  comparison vectors Clang oracle :: clang == expected
+PASS 33/37  logic vectors GCC oracle :: gcc == expected
+PASS 34/37  logic vectors Clang oracle :: clang == expected
+PASS 35/37  output-path collision rejection :: rejected before write
+PASS 36/37  Aegis 2.4.0 C-bootstrap 11/11 gate :: 11/11 upstream clean-suite gate
+PASS 37/37  Aegis DXL/DXS/DXASM certificate consensus :: DXL=DXS=DXASM=33570824; repeat bytes exact
+
+RELEASE_GATE PASS=37 FAIL=0 TOTAL=37
+RUSTC_GATE=SKIP: rustc unavailable on validation host
+make[1]: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/toolchains/aegis-c2r-0.1.0'

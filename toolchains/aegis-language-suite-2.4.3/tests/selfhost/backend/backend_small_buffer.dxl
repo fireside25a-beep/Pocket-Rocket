@@ -1,0 +1,11 @@
+import "../../../compiler/dxl/selfhost/backend/elf64_x86_64.dxl";
+
+fn main()->i32 {
+    let owner:array_i64=array_new(64,0);
+    let bytes:slice_i64=slice(owner,0,array_len(owner));
+    let result:result_i64=backend_build_elf64_x86_64(bytes);
+    assert(is_err(result));
+    assert(error_code(result)==BACKEND_ERROR_OUTPUT_TOO_SMALL);
+    array_free(owner);
+    return as(i32,0);
+}

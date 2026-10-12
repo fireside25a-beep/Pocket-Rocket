@@ -1,0 +1,2 @@
+fn bad(v: slice_i64) -> slice_i64 { return v; }
+fn main() -> i32 { return as(i32, 0); }

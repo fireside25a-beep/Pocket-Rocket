@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a language, runtime, library, or tooling change
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [DXL, DXS, DXASM, DXB3 VM, Standard library, Tooling, Documentation]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and use case
+      description: Describe the concrete problem before proposing syntax or implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Include determinism, safety, compatibility, and testing implications.
+    validations:
+      required: true

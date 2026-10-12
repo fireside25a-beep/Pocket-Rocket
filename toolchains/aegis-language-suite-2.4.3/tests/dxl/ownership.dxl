@@ -1,0 +1,14 @@
+fn sum(v: slice_i64) -> i64 {
+    let i: i64 = 0;
+    let total: i64 = 0;
+    while i < array_len(v) { total = total + v[i]; i = i + 1; }
+    return total;
+}
+fn main() -> i32 {
+    let a: array_i64 = array_new(4, 10);
+    a[2] = 12;
+    let view: slice_i64 = slice(a, 0, 4);
+    print_i64(sum(view));
+    array_free(a);
+    return as(i32, 0);
+}

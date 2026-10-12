@@ -1,0 +1,4 @@
+comptime fn mul_add(a: i64, b: i64, c: i64) -> i64 { return a * b + c; }
+const VALUE: i64 = mul_add(6, 7, 1);
+comptime { assert(VALUE == 43); }
+fn main() -> i32 { print_i64(VALUE); return as(i32, 0); }

@@ -1,0 +1,13 @@
+// Source coordinates use byte offsets and one-based line/column values.
+struct Span {
+    file: i64,
+    start: i64,
+    end: i64,
+    line: i64,
+    column: i64,
+}
+
+fn span_make(file: i64, start: i64, finish: i64, line: i64, column: i64) -> Span {
+    return Span{file:file,start:start,end:finish,line:line,column:column};
+}
+

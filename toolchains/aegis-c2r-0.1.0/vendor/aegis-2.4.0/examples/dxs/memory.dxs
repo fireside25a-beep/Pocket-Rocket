@@ -1,0 +1,2 @@
+# generation-checked bounded memory object
+3 alloc 0 42 mset dup 0 mget print free

@@ -1,0 +1,2 @@
+fn bad(x: Missing) -> i64 { return 0; }
+fn main() -> i32 { return as(i32, 0); }

@@ -1,0 +1,269 @@
+import "parser.dxl";
+
+fn full_name_equal(src:slice_i64,left_start:i64,left_length:i64,right_start:i64,right_length:i64)->bool {
+    if left_length!=right_length||left_start<0||right_start<0||left_start+left_length>array_len(src)||right_start+right_length>array_len(src) { return false; }
+    let i:i64=0;
+    let same:bool=true;
+    while i<left_length&&same {
+        if src[left_start+i]!=src[right_start+i] { same=false; }
+        i=i+1;
+    }
+    return same;
+}
+
+fn full_symbol_in_scope(
+    src:slice_i64,name_start:i64,name_length:i64,use_scope:i64,scope_parents:slice_i64,
+    symbol_name_starts:slice_i64,symbol_name_lengths:slice_i64,
+    symbol_scopes:slice_i64,symbol_count:i64
+)->i64 {
+    let scope:i64=use_scope;
+    let found:i64=-1;
+    while scope>=0&&found<0 {
+        let i:i64=symbol_count-1;
+        while i>=0&&found<0 {
+            if symbol_scopes[i]==scope&&full_name_equal(src,name_start,name_length,symbol_name_starts[i],symbol_name_lengths[i]) { found=i; }
+            i=i-1;
+        }
+        if scope>=array_len(scope_parents) { scope=-1; }
+        else { scope=scope_parents[scope]; }
+    }
+    return found;
+}
+
+fn full_symbol_same_scope(
+    src:slice_i64,name_start:i64,name_length:i64,scope:i64,
+    symbol_name_starts:slice_i64,symbol_name_lengths:slice_i64,symbol_scopes:slice_i64,symbol_count:i64
+)->i64 {
+    let i:i64=0;let found:i64=-1;
+    while i<symbol_count&&found<0 {
+        if symbol_scopes[i]==scope&&full_name_equal(src,name_start,name_length,symbol_name_starts[i],symbol_name_lengths[i]) { found=i; }
+        i=i+1;
+    }
+    return found;
+}
+
+fn full_symbol_add(
+    name_starts:slice_i64,name_lengths:slice_i64,types:slice_i64,scopes:slice_i64,kinds:slice_i64,nodes:slice_i64,
+    count:i64,name_start:i64,name_length:i64,type_id:i64,scope:i64,kind:i64,node:i64
+)->i64 {
+    if count>=array_len(name_starts)||count>=array_len(name_lengths)||count>=array_len(types)||count>=array_len(scopes)||count>=array_len(kinds)||count>=array_len(nodes) { return -1; }
+    name_starts[count]=name_start;name_lengths[count]=name_length;types[count]=type_id;
+    scopes[count]=scope;kinds[count]=kind;nodes[count]=node;
+    return count+1;
+}
+
+fn full_first_child(parents:slice_i64,count:i64,parent:i64)->i64 {
+    let i:i64=0;let found:i64=-1;
+    while i<count&&found<0 { if parents[i]==parent { found=i; } i=i+1; }
+    return found;
+}
+
+fn full_second_child(parents:slice_i64,count:i64,parent:i64)->i64 {
+    let i:i64=0;let seen:i64=0;let found:i64=-1;
+    while i<count&&found<0 {
+        if parents[i]==parent { if seen==1 { found=i; } else { seen=seen+1; } }
+        i=i+1;
+    }
+    return found;
+}
+
+fn full_is_numeric(type_id:i64)->bool { return type_id==FULL_TYPE_I64||type_id==FULL_TYPE_I32; }
+
+fn full_expression_kind(kind:i64)->bool {
+    return kind>=FULL_AST_INT&&kind<=FULL_AST_FIELD_VALUE;
+}
+
+fn full_diag_for_node(
+    state:slice_i64,diag_codes:slice_i64,diag_starts:slice_i64,diag_ends:slice_i64,diag_lines:slice_i64,diag_columns:slice_i64,
+    code:i64,node:i64,ast_firsts:slice_i64,
+    token_starts:slice_i64,token_ends:slice_i64,token_lines:slice_i64,token_columns:slice_i64,token_count:i64
+)->bool {
+    let token:i64=0;if node>=0&&node<array_len(ast_firsts) { token=ast_firsts[node]; }
+    return full_diag(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,code,token,
+        token_starts,token_ends,token_lines,token_columns,token_count);
+}
+
+fn full_enclosing_function(ast_kinds:slice_i64,ast_parents:slice_i64,ast_count:i64,node:i64)->i64 {
+    let current:i64=node;
+    let found:i64=-1;
+    while current>=0&&current<ast_count&&found<0 {
+        if ast_kinds[current]==FULL_AST_FUNCTION { found=current; }
+        else { current=ast_parents[current]; }
+    }
+    return found;
+}
+
+fn full_analyze(
+    src:slice_i64,
+    token_starts:slice_i64,token_ends:slice_i64,token_lines:slice_i64,token_columns:slice_i64,token_count:i64,
+    state:slice_i64,scope_parents:slice_i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_firsts:slice_i64,
+    ast_types:slice_i64,ast_name_starts:slice_i64,ast_name_lengths:slice_i64,ast_scopes:slice_i64,ast_count:i64,
+    symbol_name_starts:slice_i64,symbol_name_lengths:slice_i64,symbol_types:slice_i64,
+    symbol_scopes:slice_i64,symbol_kinds:slice_i64,symbol_nodes:slice_i64,
+    diag_codes:slice_i64,diag_starts:slice_i64,diag_ends:slice_i64,diag_lines:slice_i64,diag_columns:slice_i64
+)->FullSemanticReport {
+    let symbol_count:i64=0;
+    let i:i64=0;
+
+    // Declaration collection is separate from expression typing, so function
+    // calls and constants have deterministic forward visibility.
+    while i<ast_count&&state[FULL_STATE_FATAL]==0 {
+        let kind:i64=ast_kinds[i];
+        if kind==FULL_AST_FUNCTION||kind==FULL_AST_CONST||kind==FULL_AST_PARAM||kind==FULL_AST_LET||kind==FULL_AST_STRUCT||kind==FULL_AST_ENUM {
+            if ast_name_lengths[i]>0 {
+                let duplicate:i64=full_symbol_same_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if duplicate>=0 {
+                    full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_DUPLICATE_NAME,i,ast_firsts,
+                        token_starts,token_ends,token_lines,token_columns,token_count);
+                } else {
+                    let symbol_kind:i64=FULL_SYMBOL_VALUE;
+                    if kind==FULL_AST_FUNCTION { symbol_kind=FULL_SYMBOL_FUNCTION; }
+                    else if kind==FULL_AST_STRUCT||kind==FULL_AST_ENUM { symbol_kind=FULL_SYMBOL_TYPE; }
+                    let added:i64=full_symbol_add(symbol_name_starts,symbol_name_lengths,symbol_types,symbol_scopes,symbol_kinds,symbol_nodes,
+                        symbol_count,ast_name_starts[i],ast_name_lengths[i],ast_types[i],ast_scopes[i],symbol_kind,i);
+                    if added<0 { state[FULL_STATE_FATAL]=FULL_E_CAPACITY; }
+                    else { symbol_count=added; }
+                }
+            }
+        }
+        i=i+1;
+    }
+
+    // Resolve types to a fixed point. The AST stores expressions in postorder;
+    // repeated passes cover forward constants and inferred declarations without
+    // source-order special cases.
+    let round:i64=0;
+    let inference_work:i64=0;
+    let changed:bool=true;
+    // Unknown types only transition to a concrete type. Every productive round
+    // resolves at least one AST node, so ast_count+1 is a complete fixed-point
+    // bound. A separate work budget prevents quadratic adversarial inputs from
+    // monopolizing the compiler process.
+    while round<ast_count+1&&changed&&state[FULL_STATE_FATAL]==0&&inference_work<=FULL_MAX_INFERENCE_WORK-ast_count {
+        inference_work=inference_work+ast_count;
+        changed=false;round=round+1;i=0;
+        while i<ast_count {
+            let kind:i64=ast_kinds[i];
+            let before:i64=ast_types[i];
+            if kind==FULL_AST_INT { ast_types[i]=FULL_TYPE_I64; }
+            else if kind==FULL_AST_BOOL { ast_types[i]=FULL_TYPE_BOOL; }
+            else if kind==FULL_AST_NAME {
+                let symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if symbol>=0 { ast_types[i]=symbol_types[symbol]; }
+            } else if kind==FULL_AST_CALL {
+                let function_symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if function_symbol>=0&&symbol_kinds[function_symbol]==FULL_SYMBOL_FUNCTION { ast_types[i]=symbol_types[function_symbol]; }
+            } else if kind==FULL_AST_NEGATE||kind==FULL_AST_NOT||kind==FULL_AST_CAST {
+                let child:i64=full_first_child(ast_parents,ast_count,i);
+                if kind!=FULL_AST_CAST&&child>=0&&ast_types[child]!=FULL_TYPE_UNKNOWN { ast_types[i]=ast_types[child]; }
+            } else if kind>=FULL_AST_ADD&&kind<=FULL_AST_OR {
+                let left:i64=full_first_child(ast_parents,ast_count,i);let right:i64=full_second_child(ast_parents,ast_count,i);
+                if left>=0&&right>=0&&ast_types[left]!=FULL_TYPE_UNKNOWN&&ast_types[right]!=FULL_TYPE_UNKNOWN {
+                    if kind>=FULL_AST_EQ { ast_types[i]=FULL_TYPE_BOOL; }
+                    else { ast_types[i]=ast_types[left]; }
+                }
+            } else if kind==FULL_AST_INDEX {
+                let base:i64=full_first_child(ast_parents,ast_count,i);
+                if base>=0&&(ast_types[base]==FULL_TYPE_ARRAY_I64||ast_types[base]==FULL_TYPE_SLICE_I64) { ast_types[i]=FULL_TYPE_I64; }
+            } else if kind==FULL_AST_STRUCT_LITERAL {
+                let aggregate_symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if aggregate_symbol>=0&&symbol_kinds[aggregate_symbol]==FULL_SYMBOL_TYPE { ast_types[i]=FULL_TYPE_NAMED; }
+            } else if kind==FULL_AST_FIELD_VALUE {
+                let field_child:i64=full_first_child(ast_parents,ast_count,i);
+                if field_child>=0 { ast_types[i]=ast_types[field_child]; }
+            } else if kind==FULL_AST_CONST||kind==FULL_AST_LET {
+                let initializer:i64=full_first_child(ast_parents,ast_count,i);
+                if initializer>=0&&ast_types[initializer]!=FULL_TYPE_UNKNOWN {
+                    if ast_types[i]==FULL_TYPE_UNKNOWN { ast_types[i]=ast_types[initializer]; }
+                    let symbol:i64=full_symbol_same_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],
+                        symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                    if symbol>=0&&symbol_types[symbol]==FULL_TYPE_UNKNOWN { symbol_types[symbol]=ast_types[i]; }
+                }
+            }
+            if ast_types[i]!=before { changed=true; }
+            i=i+1;
+        }
+    }
+    if changed&&round<ast_count+1&&state[FULL_STATE_FATAL]==0&&inference_work>FULL_MAX_INFERENCE_WORK-ast_count {
+        state[FULL_STATE_FATAL]=FULL_E_INFERENCE_LIMIT;
+    }
+
+    // Emit stable diagnostics only after inference reaches its fixed point.
+    let typed_count:i64=0;i=0;
+    while i<ast_count&&state[FULL_STATE_FATAL]==0 {
+        let kind:i64=ast_kinds[i];
+        if full_expression_kind(kind) {
+            if ast_types[i]!=FULL_TYPE_UNKNOWN { typed_count=typed_count+1; }
+            if kind==FULL_AST_NAME {
+                let symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if symbol<0 { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNKNOWN_NAME,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            } else if kind==FULL_AST_CALL {
+                let symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if symbol<0 { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNKNOWN_NAME,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+                else if symbol_kinds[symbol]!=FULL_SYMBOL_FUNCTION { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_NOT_CALLABLE,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            } else if kind==FULL_AST_STRUCT_LITERAL {
+                let aggregate_symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                    symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+                if aggregate_symbol<0||symbol_kinds[aggregate_symbol]!=FULL_SYMBOL_TYPE {
+                    full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNKNOWN_NAME,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count);
+                }
+            } else if kind==FULL_AST_NEGATE {
+                let child:i64=full_first_child(ast_parents,ast_count,i);
+                if child>=0&&!full_is_numeric(ast_types[child]) { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            } else if kind==FULL_AST_NOT {
+                let child:i64=full_first_child(ast_parents,ast_count,i);
+                if child>=0&&ast_types[child]!=FULL_TYPE_BOOL { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            } else if kind>=FULL_AST_ADD&&kind<=FULL_AST_OR {
+                let left:i64=full_first_child(ast_parents,ast_count,i);let right:i64=full_second_child(ast_parents,ast_count,i);
+                let valid:bool=left>=0&&right>=0;
+                if valid {
+                    if kind>=FULL_AST_ADD&&kind<=FULL_AST_MOD { valid=full_is_numeric(ast_types[left])&&ast_types[left]==ast_types[right]; }
+                    else if kind==FULL_AST_AND||kind==FULL_AST_OR { valid=ast_types[left]==FULL_TYPE_BOOL&&ast_types[right]==FULL_TYPE_BOOL; }
+                    else { valid=ast_types[left]!=FULL_TYPE_UNKNOWN&&ast_types[left]==ast_types[right]; }
+                }
+                if !valid { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            } else if kind==FULL_AST_INDEX {
+                let base:i64=full_first_child(ast_parents,ast_count,i);let index:i64=full_second_child(ast_parents,ast_count,i);
+                if base<0||index<0||(ast_types[base]!=FULL_TYPE_ARRAY_I64&&ast_types[base]!=FULL_TYPE_SLICE_I64)||!full_is_numeric(ast_types[index]) {
+                    full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count);
+                }
+            }
+            if ast_types[i]==FULL_TYPE_UNKNOWN { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNRESOLVED_TYPE,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+        } else if kind==FULL_AST_LET||kind==FULL_AST_CONST {
+            let initializer:i64=full_first_child(ast_parents,ast_count,i);
+            if initializer>=0&&ast_types[i]!=FULL_TYPE_UNKNOWN&&ast_types[initializer]!=FULL_TYPE_UNKNOWN&&ast_types[i]!=ast_types[initializer] {
+                full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count);
+            }
+        } else if kind==FULL_AST_ASSIGN {
+            let symbol:i64=full_symbol_in_scope(src,ast_name_starts[i],ast_name_lengths[i],ast_scopes[i],scope_parents,
+                symbol_name_starts,symbol_name_lengths,symbol_scopes,symbol_count);
+            let value:i64=full_first_child(ast_parents,ast_count,i);
+            if symbol<0 { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_UNKNOWN_NAME,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            else if value>=0&&symbol_types[symbol]!=ast_types[value] { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_TYPE_MISMATCH,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+        } else if kind==FULL_AST_WHILE||kind==FULL_AST_IF {
+            let condition:i64=full_first_child(ast_parents,ast_count,i);
+            if condition<0||ast_types[condition]!=FULL_TYPE_BOOL { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_CONDITION_BOOL,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+        } else if kind==FULL_AST_ASSERT {
+            let condition:i64=full_first_child(ast_parents,ast_count,i);
+            if condition<0||ast_types[condition]!=FULL_TYPE_BOOL { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_ASSERT_BOOL,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+        } else if kind==FULL_AST_RETURN {
+            let function:i64=full_enclosing_function(ast_kinds,ast_parents,ast_count,i);
+            let value:i64=full_first_child(ast_parents,ast_count,i);
+            if function>=0 {
+                let actual:i64=FULL_TYPE_VOID;if value>=0 { actual=ast_types[value]; }
+                if actual!=ast_types[function] { full_diag_for_node(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,FULL_E_RETURN_TYPE,i,ast_firsts,token_starts,token_ends,token_lines,token_columns,token_count); }
+            }
+        }
+        i=i+1;
+    }
+
+    return FullSemanticReport{clean:state[FULL_STATE_FATAL]==0&&state[FULL_STATE_DIAG_COUNT]==0,
+        symbol_count:symbol_count,diagnostic_count:state[FULL_STATE_DIAG_COUNT],typed_count:typed_count};
+}

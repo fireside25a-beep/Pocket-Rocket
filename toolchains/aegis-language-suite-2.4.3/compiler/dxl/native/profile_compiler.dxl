@@ -1,0 +1,643 @@
+import "../selfhost/lexer.dxl";
+import "x86_64_linux.dxl";
+import "../../../runtime/native/linux_x86_64.dxl";
+
+const NP_TOKEN: i64 = 0;
+const NP_CODE: i64 = 1;
+const NP_VAR_COUNT: i64 = 2;
+const NP_CALL_COUNT: i64 = 3;
+const NP_ERROR: i64 = 4;
+const NP_ERROR_TOKEN: i64 = 5;
+const NP_RETURN_COUNT: i64 = 6;
+const NP_EXPR_TYPE: i64 = 7;
+const NP_DEPTH: i64 = 8;
+const NP_ROOT_RETURN: i64 = 9;
+const NP_IN_TEST: i64 = 10;
+const NP_SLOTS: i64 = 11;
+
+const NP_TYPE_I64: i64 = 1;
+const NP_TYPE_BOOL: i64 = 2;
+
+const NP_E_EXPECT_FN: i64 = 2702;
+const NP_E_EXPECT_MAIN: i64 = 2703;
+const NP_E_EXPECT_LPAREN: i64 = 2704;
+const NP_E_EXPECT_RPAREN: i64 = 2705;
+const NP_E_EXPECT_ARROW: i64 = 2706;
+const NP_E_EXPECT_I32: i64 = 2707;
+const NP_E_EXPECT_LBRACE: i64 = 2708;
+const NP_E_EXPECT_RBRACE: i64 = 2709;
+const NP_E_EXPECT_IDENT: i64 = 2710;
+const NP_E_EXPECT_COLON: i64 = 2711;
+const NP_E_EXPECT_I64: i64 = 2712;
+const NP_E_EXPECT_ASSIGN: i64 = 2713;
+const NP_E_EXPECT_SEMI: i64 = 2714;
+const NP_E_DUPLICATE_VARIABLE: i64 = 2715;
+const NP_E_UNKNOWN_VARIABLE: i64 = 2716;
+const NP_E_EXPECT_EXPRESSION: i64 = 2717;
+const NP_E_EXPECT_BLOCK: i64 = 2718;
+const NP_E_EXPECT_PRINT_CALL: i64 = 2719;
+const NP_E_EXPECT_RETURN_CAST: i64 = 2720;
+const NP_E_UNSUPPORTED_STATEMENT: i64 = 2721;
+const NP_E_VARIABLE_CAPACITY: i64 = 2722;
+const NP_E_CALL_CAPACITY: i64 = 2723;
+const NP_E_RETURN_REQUIRED: i64 = 2724;
+const NP_E_TRAILING_TOKENS: i64 = 2725;
+const NP_E_TABLE_INIT: i64 = 2726;
+const NP_E_LEXER: i64 = 2727;
+const NP_E_SOURCE_TOO_LARGE: i64 = 2728;
+const NP_E_TYPE_MISMATCH: i64 = 2729;
+const NP_E_NESTING_LIMIT: i64 = 2730;
+const NP_E_RUN_REQUIRES_MAIN: i64 = 2731;
+const NP_E_TEST_REQUIRES_TESTS: i64 = 2732;
+const NP_E_RETURN_IN_TEST: i64 = 2733;
+
+fn np_fail(state: slice_i64, code: i64) -> void {
+    if state[NP_ERROR] == 0 {
+        state[NP_ERROR] = code;
+        state[NP_ERROR_TOKEN] = state[NP_TOKEN];
+    }
+}
+
+fn np_current(kinds: slice_i64, state: slice_i64) -> i64 {
+    return kinds[state[NP_TOKEN]];
+}
+
+fn np_advance(state: slice_i64) -> void {
+    state[NP_TOKEN] = state[NP_TOKEN] + 1;
+}
+
+fn np_accept(kinds: slice_i64, state: slice_i64, kind: i64) -> bool {
+    if state[NP_ERROR] == 0 && np_current(kinds,state) == kind {
+        np_advance(state);
+        return true;
+    }
+    return false;
+}
+
+fn np_expect(kinds: slice_i64, state: slice_i64, kind: i64, code: i64) -> bool {
+    if np_accept(kinds,state,kind) { return true; }
+    np_fail(state,code);
+    return false;
+}
+
+fn np_same_name(src: slice_i64, left_start: i64, left_length: i64, right_start: i64, right_length: i64) -> bool {
+    if left_length != right_length { return false; }
+    let index: i64 = 0;
+    while index < left_length {
+        if src[left_start+index] != src[right_start+index] { return false; }
+        index = index + 1;
+    }
+    return true;
+}
+
+fn np_is_main(src: slice_i64, start: i64, length: i64) -> bool {
+    return length==4&&src[start]==109&&src[start+1]==97&&src[start+2]==105&&src[start+3]==110;
+}
+
+fn np_is_print_i64(src: slice_i64, start: i64, length: i64) -> bool {
+    return length==9&&src[start]==112&&src[start+1]==114&&src[start+2]==105&&src[start+3]==110&&src[start+4]==116&&src[start+5]==95&&src[start+6]==105&&src[start+7]==54&&src[start+8]==52;
+}
+
+fn np_lookup_variable(
+    src: slice_i64,
+    name_start: i64,
+    name_length: i64,
+    variable_starts: slice_i64,
+    variable_lengths: slice_i64,
+    variable_count: i64
+) -> i64 {
+    let index: i64 = 0;
+    let found: i64 = -1;
+    while index < variable_count && found < 0 {
+        if np_same_name(src,name_start,name_length,variable_starts[index],variable_lengths[index]) {
+            found = index;
+        }
+        index = index + 1;
+    }
+    return found;
+}
+
+fn np_parse_primary(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    if state[NP_ERROR] != 0 { return; }
+    let token: i64 = state[NP_TOKEN];
+    let kind: i64 = kinds[token];
+    if kind == TK_INT {
+        state[NP_CODE]=native_x64_literal(code,state[NP_CODE],values[token]);
+        state[NP_EXPR_TYPE]=NP_TYPE_I64;
+        np_advance(state);
+    } else if kind == TK_TRUE || kind == TK_FALSE {
+        let value: i64 = 0;
+        if kind == TK_TRUE { value=1; }
+        state[NP_CODE]=native_x64_literal(code,state[NP_CODE],value);
+        state[NP_EXPR_TYPE]=NP_TYPE_BOOL;
+        np_advance(state);
+    } else if kind == TK_IDENT {
+        let length: i64 = ends[token]-starts[token];
+        let slot: i64=np_lookup_variable(src,starts[token],length,variable_starts,variable_lengths,state[NP_VAR_COUNT]);
+        if slot < 0 { np_fail(state,NP_E_UNKNOWN_VARIABLE); }
+        else {
+            state[NP_CODE]=native_x64_load(code,state[NP_CODE],slot);
+            state[NP_EXPR_TYPE]=NP_TYPE_I64;
+            np_advance(state);
+        }
+    } else if kind == TK_LPAREN {
+        if state[NP_DEPTH]>=64 { np_fail(state,NP_E_NESTING_LIMIT); }
+        else {
+            state[NP_DEPTH]=state[NP_DEPTH]+1;
+            np_advance(state);
+            np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            np_expect(kinds,state,TK_RPAREN,NP_E_EXPECT_RPAREN);
+            state[NP_DEPTH]=state[NP_DEPTH]-1;
+        }
+    } else {
+        np_fail(state,NP_E_EXPECT_EXPRESSION);
+    }
+}
+
+fn np_parse_unary(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    let kind: i64=np_current(kinds,state);
+    if kind==TK_MINUS || kind==TK_BANG {
+        if state[NP_DEPTH]>=64 { np_fail(state,NP_E_NESTING_LIMIT); }
+        else {
+            state[NP_DEPTH]=state[NP_DEPTH]+1;
+            np_advance(state);
+            np_parse_unary(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            if state[NP_ERROR]==0 {
+                if kind==TK_MINUS {
+                    if state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+                    else { state[NP_CODE]=native_x64_neg(code,state[NP_CODE]); }
+                } else {
+                    if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+                    else { state[NP_CODE]=native_x64_bool_not(code,state[NP_CODE]); }
+                }
+            }
+            state[NP_DEPTH]=state[NP_DEPTH]-1;
+        }
+    } else {
+        np_parse_primary(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    }
+}
+
+fn np_parse_multiply(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_unary(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && np_current(kinds,state)==TK_STAR {
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        state[NP_CODE]=native_x64_push_rax(code,state[NP_CODE]);
+        np_parse_unary(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if left_type!=NP_TYPE_I64 || state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_binary_operands(code,state[NP_CODE]);
+                state[NP_CODE]=native_x64_mul(code,state[NP_CODE]);
+                state[NP_EXPR_TYPE]=NP_TYPE_I64;
+            }
+        }
+    }
+}
+
+fn np_parse_add(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_multiply(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && (np_current(kinds,state)==TK_PLUS || np_current(kinds,state)==TK_MINUS) {
+        let kind:i64=np_current(kinds,state);
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        state[NP_CODE]=native_x64_push_rax(code,state[NP_CODE]);
+        np_parse_multiply(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if left_type!=NP_TYPE_I64 || state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_binary_operands(code,state[NP_CODE]);
+                if kind==TK_PLUS { state[NP_CODE]=native_x64_add(code,state[NP_CODE]); }
+                else { state[NP_CODE]=native_x64_sub(code,state[NP_CODE]); }
+                state[NP_EXPR_TYPE]=NP_TYPE_I64;
+            }
+        }
+    }
+}
+
+fn np_parse_comparison(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_add(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && (np_current(kinds,state)==TK_LT || np_current(kinds,state)==TK_LE || np_current(kinds,state)==TK_GT || np_current(kinds,state)==TK_GE) {
+        let kind:i64=np_current(kinds,state);
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        state[NP_CODE]=native_x64_push_rax(code,state[NP_CODE]);
+        np_parse_add(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if left_type!=NP_TYPE_I64 || state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_binary_operands(code,state[NP_CODE]);
+                let operation:i64=156;
+                if kind==TK_LE { operation=158; }
+                else if kind==TK_GT { operation=159; }
+                else if kind==TK_GE { operation=157; }
+                state[NP_CODE]=native_x64_compare(code,state[NP_CODE],operation);
+                state[NP_EXPR_TYPE]=NP_TYPE_BOOL;
+            }
+        }
+    }
+}
+
+fn np_parse_equality(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_comparison(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && (np_current(kinds,state)==TK_EQ || np_current(kinds,state)==TK_NE) {
+        let kind:i64=np_current(kinds,state);
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        state[NP_CODE]=native_x64_push_rax(code,state[NP_CODE]);
+        np_parse_comparison(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if left_type!=state[NP_EXPR_TYPE] { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_binary_operands(code,state[NP_CODE]);
+                let operation:i64=148;
+                if kind==TK_NE { operation=149; }
+                state[NP_CODE]=native_x64_compare(code,state[NP_CODE],operation);
+                state[NP_EXPR_TYPE]=NP_TYPE_BOOL;
+            }
+        }
+    }
+}
+
+fn np_parse_and(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_equality(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && np_current(kinds,state)==TK_AND {
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        if left_type!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+        else {
+            state[NP_CODE]=native_x64_jump_if_zero(code,state[NP_CODE]);
+            let false_patch:i64=state[NP_CODE]-4;
+            np_parse_equality(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            if state[NP_ERROR]==0 {
+                if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+                else {
+                    state[NP_CODE]=native_x64_jump(code,state[NP_CODE],state[NP_CODE]+5);
+                    let finish_patch:i64=state[NP_CODE]-4;
+                    native_patch_i32(code,false_patch,state[NP_CODE]-(false_patch+4));
+                    state[NP_CODE]=native_x64_literal(code,state[NP_CODE],0);
+                    native_patch_i32(code,finish_patch,state[NP_CODE]-(finish_patch+4));
+                    state[NP_EXPR_TYPE]=NP_TYPE_BOOL;
+                }
+            }
+        }
+    }
+}
+
+fn np_parse_expression(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    np_parse_and(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+    while state[NP_ERROR]==0 && np_current(kinds,state)==TK_OR {
+        let left_type:i64=state[NP_EXPR_TYPE];
+        np_advance(state);
+        if left_type!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+        else {
+            state[NP_CODE]=native_x64_jump_if_nonzero(code,state[NP_CODE]);
+            let true_patch:i64=state[NP_CODE]-4;
+            np_parse_and(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            if state[NP_ERROR]==0 {
+                if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+                else {
+                    state[NP_CODE]=native_x64_jump(code,state[NP_CODE],state[NP_CODE]+5);
+                    let finish_patch:i64=state[NP_CODE]-4;
+                    native_patch_i32(code,true_patch,state[NP_CODE]-(true_patch+4));
+                    state[NP_CODE]=native_x64_literal(code,state[NP_CODE],1);
+                    native_patch_i32(code,finish_patch,state[NP_CODE]-(finish_patch+4));
+                    state[NP_EXPR_TYPE]=NP_TYPE_BOOL;
+                }
+            }
+        }
+    }
+}
+
+fn np_parse_statement(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    if state[NP_ERROR]!=0 { return; }
+    if state[NP_DEPTH]==1 { state[NP_ROOT_RETURN]=0; }
+    let kind:i64=np_current(kinds,state);
+
+    if kind==TK_LET {
+        np_advance(state);
+        if np_current(kinds,state)!=TK_IDENT { np_fail(state,NP_E_EXPECT_IDENT); return; }
+        let name_token:i64=state[NP_TOKEN];
+        let name_length:i64=ends[name_token]-starts[name_token];
+        if state[NP_VAR_COUNT]>=array_len(variable_starts) { np_fail(state,NP_E_VARIABLE_CAPACITY); return; }
+        if np_lookup_variable(src,starts[name_token],name_length,variable_starts,variable_lengths,state[NP_VAR_COUNT])>=0 {
+            np_fail(state,NP_E_DUPLICATE_VARIABLE); return;
+        }
+        np_advance(state);
+        np_expect(kinds,state,TK_COLON,NP_E_EXPECT_COLON);
+        np_expect(kinds,state,TK_I64,NP_E_EXPECT_I64);
+        np_expect(kinds,state,TK_ASSIGN,NP_E_EXPECT_ASSIGN);
+        np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        np_expect(kinds,state,TK_SEMI,NP_E_EXPECT_SEMI);
+        if state[NP_ERROR]==0 {
+            if state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                let slot:i64=state[NP_VAR_COUNT];
+                variable_starts[slot]=starts[name_token];variable_lengths[slot]=name_length;
+                state[NP_VAR_COUNT]=slot+1;
+                state[NP_CODE]=native_x64_store(code,state[NP_CODE],slot);
+            }
+        }
+    } else if kind==TK_IDENT {
+        let name_token:i64=state[NP_TOKEN];
+        let name_length:i64=ends[name_token]-starts[name_token];
+        if np_is_print_i64(src,starts[name_token],name_length) {
+            np_advance(state);
+            np_expect(kinds,state,TK_LPAREN,NP_E_EXPECT_PRINT_CALL);
+            np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            np_expect(kinds,state,TK_RPAREN,NP_E_EXPECT_PRINT_CALL);
+            np_expect(kinds,state,TK_SEMI,NP_E_EXPECT_SEMI);
+            if state[NP_ERROR]==0 {
+                if state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+                else {
+                    let call_index:i64=state[NP_CALL_COUNT];
+                    if call_index>=array_len(call_patches) { np_fail(state,NP_E_CALL_CAPACITY); }
+                    else {
+                        state[NP_CODE]=native_x64_call_placeholder(code,state[NP_CODE]);
+                        call_patches[call_index]=state[NP_CODE]-4;
+                        state[NP_CALL_COUNT]=call_index+1;
+                    }
+                }
+            }
+        } else {
+            let slot:i64=np_lookup_variable(src,starts[name_token],name_length,variable_starts,variable_lengths,state[NP_VAR_COUNT]);
+            if slot<0 { np_fail(state,NP_E_UNKNOWN_VARIABLE); return; }
+            np_advance(state);
+            np_expect(kinds,state,TK_ASSIGN,NP_E_EXPECT_ASSIGN);
+            np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            np_expect(kinds,state,TK_SEMI,NP_E_EXPECT_SEMI);
+            if state[NP_ERROR]==0 {
+                if state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+                else { state[NP_CODE]=native_x64_store(code,state[NP_CODE],slot); }
+            }
+        }
+    } else if kind==TK_WHILE {
+        np_advance(state);
+        let loop_start:i64=state[NP_CODE];
+        state[NP_CODE]=native_x64_loop_fuel(code,state[NP_CODE]);
+        np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_jump_if_zero(code,state[NP_CODE]);
+                let exit_patch:i64=state[NP_CODE]-4;
+                np_parse_block(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+                if state[NP_ERROR]==0 {
+                    state[NP_CODE]=native_x64_jump(code,state[NP_CODE],loop_start);
+                    native_patch_i32(code,exit_patch,state[NP_CODE]-(exit_patch+4));
+                }
+            }
+        }
+    } else if kind==TK_IF {
+        np_advance(state);
+        np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 {
+            if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_jump_if_zero(code,state[NP_CODE]);
+                let false_patch:i64=state[NP_CODE]-4;
+                np_parse_block(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+                if state[NP_ERROR]==0 && np_current(kinds,state)==TK_ELSE {
+                    state[NP_CODE]=native_x64_jump(code,state[NP_CODE],state[NP_CODE]+5);
+                    let finish_patch:i64=state[NP_CODE]-4;
+                    native_patch_i32(code,false_patch,state[NP_CODE]-(false_patch+4));
+                    np_advance(state);
+                    np_parse_block(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+                    if state[NP_ERROR]==0 { native_patch_i32(code,finish_patch,state[NP_CODE]-(finish_patch+4)); }
+                } else if state[NP_ERROR]==0 {
+                    native_patch_i32(code,false_patch,state[NP_CODE]-(false_patch+4));
+                }
+            }
+        }
+    } else if kind==TK_ASSERT {
+        np_advance(state);
+        np_expect(kinds,state,TK_LPAREN,NP_E_EXPECT_LPAREN);
+        np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        np_expect(kinds,state,TK_RPAREN,NP_E_EXPECT_RPAREN);
+        np_expect(kinds,state,TK_SEMI,NP_E_EXPECT_SEMI);
+        if state[NP_ERROR]==0 {
+            if state[NP_EXPR_TYPE]!=NP_TYPE_BOOL { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else { state[NP_CODE]=native_x64_assert(code,state[NP_CODE]); }
+        }
+    } else if kind==TK_RETURN {
+        if state[NP_IN_TEST]!=0 { np_fail(state,NP_E_RETURN_IN_TEST); return; }
+        np_advance(state);
+        if np_current(kinds,state)!=TK_AS { np_fail(state,NP_E_EXPECT_RETURN_CAST); }
+        else {
+            np_advance(state);
+            np_expect(kinds,state,TK_LPAREN,NP_E_EXPECT_RETURN_CAST);
+            np_expect(kinds,state,TK_I32,NP_E_EXPECT_RETURN_CAST);
+            np_expect(kinds,state,TK_COMMA,NP_E_EXPECT_RETURN_CAST);
+            np_parse_expression(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            np_expect(kinds,state,TK_RPAREN,NP_E_EXPECT_RETURN_CAST);
+        }
+        np_expect(kinds,state,TK_SEMI,NP_E_EXPECT_SEMI);
+        if state[NP_ERROR]==0 {
+            if state[NP_EXPR_TYPE]!=NP_TYPE_I64 { np_fail(state,NP_E_TYPE_MISMATCH); }
+            else {
+                state[NP_CODE]=native_x64_check_i32_cast(code,state[NP_CODE]);
+                state[NP_CODE]=native_x64_check_exit_status(code,state[NP_CODE]);
+                state[NP_CODE]=native_x64_exit(code,state[NP_CODE]);
+                state[NP_RETURN_COUNT]=state[NP_RETURN_COUNT]+1;
+                if state[NP_DEPTH]==1 { state[NP_ROOT_RETURN]=1; }
+            }
+        }
+    } else {
+        np_fail(state,NP_E_UNSUPPORTED_STATEMENT);
+    }
+}
+
+fn np_parse_block(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64
+) -> void {
+    if state[NP_DEPTH]>=64 { np_fail(state,NP_E_NESTING_LIMIT); return; }
+    let saved_variable_count:i64=state[NP_VAR_COUNT];
+    state[NP_DEPTH]=state[NP_DEPTH]+1;
+    if np_expect(kinds,state,TK_LBRACE,NP_E_EXPECT_BLOCK) {
+        while state[NP_ERROR]==0 && np_current(kinds,state)!=TK_RBRACE && np_current(kinds,state)!=TK_EOF {
+            np_parse_statement(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        }
+        np_expect(kinds,state,TK_RBRACE,NP_E_EXPECT_RBRACE);
+    }
+    state[NP_DEPTH]=state[NP_DEPTH]-1;
+    state[NP_VAR_COUNT]=saved_variable_count;
+}
+
+fn np_parse_program(
+    src:slice_i64,kinds:slice_i64,starts:slice_i64,ends:slice_i64,values:slice_i64,
+    state:slice_i64,variable_starts:slice_i64,variable_lengths:slice_i64,
+    code:slice_i64,call_patches:slice_i64,expected_mode:i64
+) -> void {
+    let source_is_test:bool=np_current(kinds,state)==TK_TEST;
+    if expected_mode==1 && source_is_test { np_fail(state,NP_E_RUN_REQUIRES_MAIN); return; }
+    if expected_mode==2 && !source_is_test { np_fail(state,NP_E_TEST_REQUIRES_TESTS); return; }
+    if source_is_test {
+        let test_count:i64=0;
+        state[NP_IN_TEST]=1;
+        while state[NP_ERROR]==0 && np_current(kinds,state)==TK_TEST {
+            np_advance(state);
+            np_expect(kinds,state,TK_STRING,NP_E_EXPECT_IDENT);
+            state[NP_VAR_COUNT]=0;
+            np_parse_block(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+            test_count=test_count+1;
+        }
+        if state[NP_ERROR]==0 && test_count==0 { np_fail(state,NP_E_EXPECT_FN); }
+        if state[NP_ERROR]==0 && np_current(kinds,state)!=TK_EOF { np_fail(state,NP_E_TRAILING_TOKENS); }
+    } else {
+        np_expect(kinds,state,TK_FN,NP_E_EXPECT_FN);
+        if state[NP_ERROR]==0 {
+            let token:i64=state[NP_TOKEN];
+            if kinds[token]!=TK_IDENT || !np_is_main(src,starts[token],ends[token]-starts[token]) { np_fail(state,NP_E_EXPECT_MAIN); }
+            else { np_advance(state); }
+        }
+        np_expect(kinds,state,TK_LPAREN,NP_E_EXPECT_LPAREN);
+        np_expect(kinds,state,TK_RPAREN,NP_E_EXPECT_RPAREN);
+        np_expect(kinds,state,TK_ARROW,NP_E_EXPECT_ARROW);
+        np_expect(kinds,state,TK_I32,NP_E_EXPECT_I32);
+        np_parse_block(src,kinds,starts,ends,values,state,variable_starts,variable_lengths,code,call_patches);
+        if state[NP_ERROR]==0 && np_current(kinds,state)!=TK_EOF { np_fail(state,NP_E_TRAILING_TOKENS); }
+        if state[NP_ERROR]==0 && state[NP_ROOT_RETURN]==0 { np_fail(state,NP_E_RETURN_REQUIRED); }
+    }
+}
+
+// Compile the bounded native DXL profile to x86-64 code.  This is a real
+// source-dependent compiler path, but deliberately not the full DXL frontend.
+fn native_profile_compile(src: slice_i64, code: slice_i64, expected_mode: i64) -> result_i64 {
+    if array_len(src)>65536 { return err_i64(as(i32,NP_E_SOURCE_TOO_LARGE)); }
+
+    let classes_owner:array_i64=array_new(256,0);
+    let singles_owner:array_i64=array_new(256,0);
+    let keyword_bytes_owner:array_i64=array_new(KEYWORD_BYTE_COUNT,0);
+    let keyword_starts_owner:array_i64=array_new(KEYWORD_COUNT,0);
+    let keyword_lengths_owner:array_i64=array_new(KEYWORD_COUNT,0);
+    let keyword_kinds_owner:array_i64=array_new(KEYWORD_COUNT,0);
+    let token_capacity:i64=array_len(src)+1;
+    let kinds_owner:array_i64=array_new(token_capacity,0);
+    let starts_owner:array_i64=array_new(token_capacity,0);
+    let ends_owner:array_i64=array_new(token_capacity,0);
+    let lines_owner:array_i64=array_new(token_capacity,0);
+    let columns_owner:array_i64=array_new(token_capacity,0);
+    let files_owner:array_i64=array_new(token_capacity,0);
+    let values_owner:array_i64=array_new(token_capacity,0);
+    let diag_codes_owner:array_i64=array_new(token_capacity,0);
+    let diag_starts_owner:array_i64=array_new(token_capacity,0);
+    let diag_ends_owner:array_i64=array_new(token_capacity,0);
+    let diag_lines_owner:array_i64=array_new(token_capacity,0);
+    let diag_columns_owner:array_i64=array_new(token_capacity,0);
+    let diag_files_owner:array_i64=array_new(token_capacity,0);
+    let lexer_state_owner:array_i64=array_new(LS_SLOTS,0);
+    let parser_state_owner:array_i64=array_new(NP_SLOTS,0);
+    let variable_starts_owner:array_i64=array_new(64,0);
+    let variable_lengths_owner:array_i64=array_new(64,0);
+    let call_patches_owner:array_i64=array_new(64,0);
+
+    let classes:slice_i64=slice(classes_owner,0,array_len(classes_owner));
+    let singles:slice_i64=slice(singles_owner,0,array_len(singles_owner));
+    let keyword_bytes:slice_i64=slice(keyword_bytes_owner,0,array_len(keyword_bytes_owner));
+    let keyword_starts:slice_i64=slice(keyword_starts_owner,0,array_len(keyword_starts_owner));
+    let keyword_lengths:slice_i64=slice(keyword_lengths_owner,0,array_len(keyword_lengths_owner));
+    let keyword_kinds:slice_i64=slice(keyword_kinds_owner,0,array_len(keyword_kinds_owner));
+    let kinds:slice_i64=slice(kinds_owner,0,array_len(kinds_owner));
+    let starts:slice_i64=slice(starts_owner,0,array_len(starts_owner));
+    let ends:slice_i64=slice(ends_owner,0,array_len(ends_owner));
+    let lines:slice_i64=slice(lines_owner,0,array_len(lines_owner));
+    let columns:slice_i64=slice(columns_owner,0,array_len(columns_owner));
+    let files:slice_i64=slice(files_owner,0,array_len(files_owner));
+    let values:slice_i64=slice(values_owner,0,array_len(values_owner));
+    let diag_codes:slice_i64=slice(diag_codes_owner,0,array_len(diag_codes_owner));
+    let diag_starts:slice_i64=slice(diag_starts_owner,0,array_len(diag_starts_owner));
+    let diag_ends:slice_i64=slice(diag_ends_owner,0,array_len(diag_ends_owner));
+    let diag_lines:slice_i64=slice(diag_lines_owner,0,array_len(diag_lines_owner));
+    let diag_columns:slice_i64=slice(diag_columns_owner,0,array_len(diag_columns_owner));
+    let diag_files:slice_i64=slice(diag_files_owner,0,array_len(diag_files_owner));
+    let lexer_state:slice_i64=slice(lexer_state_owner,0,array_len(lexer_state_owner));
+    let parser_state:slice_i64=slice(parser_state_owner,0,array_len(parser_state_owner));
+    let variable_starts:slice_i64=slice(variable_starts_owner,0,array_len(variable_starts_owner));
+    let variable_lengths:slice_i64=slice(variable_lengths_owner,0,array_len(variable_lengths_owner));
+    let call_patches:slice_i64=slice(call_patches_owner,0,array_len(call_patches_owner));
+
+    let initialized:bool=byte_tables_init(classes,singles)&&keyword_table_init(keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds);
+    let error:i64=0;
+    let used:i64=0;
+    if !initialized { error=NP_E_TABLE_INIT; }
+    else {
+        let lexed:LexerResult=lex_source(src,1,classes,singles,keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds,lexer_state,kinds,starts,ends,lines,columns,files,values,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files);
+        if !lexed.ok {
+            error=NP_E_LEXER;
+            if lexed.diagnostic_count>0 { error=diag_codes[0]; }
+            else if lexed.fatal_code!=0 { error=lexed.fatal_code; }
+        } else {
+            parser_state[NP_CODE]=native_x64_prologue(code,0);
+            np_parse_program(src,kinds,starts,ends,values,parser_state,variable_starts,variable_lengths,code,call_patches,expected_mode);
+            if parser_state[NP_ERROR]!=0 { error=parser_state[NP_ERROR]; }
+            else {
+                // Deterministic unreachable/fallthrough guard, followed by the shared print runtime.
+                parser_state[NP_CODE]=native_x64_literal(code,parser_state[NP_CODE],0);
+                parser_state[NP_CODE]=native_x64_exit(code,parser_state[NP_CODE]);
+                let runtime_start:i64=parser_state[NP_CODE];
+                parser_state[NP_CODE]=native_runtime_emit_print_i64(code,runtime_start);
+                let index:i64=0;
+                while index<parser_state[NP_CALL_COUNT] {
+                    let patch:i64=call_patches[index];
+                    native_patch_i32(code,patch,runtime_start-(patch+4));
+                    index=index+1;
+                }
+                used=parser_state[NP_CODE];
+            }
+        }
+    }
+
+    array_free(call_patches_owner);
+    array_free(variable_lengths_owner);
+    array_free(variable_starts_owner);
+    array_free(parser_state_owner);
+    array_free(lexer_state_owner);
+    array_free(diag_files_owner);array_free(diag_columns_owner);array_free(diag_lines_owner);
+    array_free(diag_ends_owner);array_free(diag_starts_owner);array_free(diag_codes_owner);
+    array_free(values_owner);array_free(files_owner);array_free(columns_owner);array_free(lines_owner);
+    array_free(ends_owner);array_free(starts_owner);array_free(kinds_owner);
+    array_free(keyword_kinds_owner);array_free(keyword_lengths_owner);array_free(keyword_starts_owner);
+    array_free(keyword_bytes_owner);array_free(singles_owner);array_free(classes_owner);
+
+    if error!=0 { return err_i64(as(i32,error)); }
+    return ok_i64(used);
+}

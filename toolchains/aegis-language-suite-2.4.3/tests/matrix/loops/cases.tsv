@@ -1,0 +1,5 @@
+language	source	verification	expected
+DXL	examples/loops/dxl/counter.dxl	comptime assertion	10
+DXL-native	examples/loops/dxl/native_counter.dxl	static executable stdout	10
+DXS	examples/loops/dxs/counter.dxs	VM stdout	10
+DXASM	examples/loops/dxasm/counter.dxasm	VM stdout	10

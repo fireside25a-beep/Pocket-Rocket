@@ -1,0 +1,65 @@
+import "../../compiler/dxl/native/byte_writer.dxl";
+
+const NATIVE_ELF_CODE_OFFSET: i64 = 4096;
+const NATIVE_ELF_BASE: i64 = 4194304;
+
+// Wrap generated machine code in a deterministic, static ELF64 executable.
+// One read/execute PT_LOAD segment contains both headers and code.  No section
+// table, interpreter, dynamic entries, relocations, or build identifiers are
+// emitted, so output depends only on the generated code bytes.
+fn native_emit_elf64_executable(out: slice_i64, code: slice_i64, code_length: i64) -> result_i64 {
+    if code_length < 1 || code_length > array_len(code) { return err_i64(as(i32,2801)); }
+    let file_length: i64 = NATIVE_ELF_CODE_OFFSET + code_length;
+    if file_length > array_len(out) { return err_i64(as(i32,2802)); }
+
+    let cursor: i64 = 0;
+    cursor=native_zero(out,cursor,file_length);
+
+    // ELF identification.
+    cursor=0;
+    cursor=native_put_u8(out,cursor,127); cursor=native_put_u8(out,cursor,69);
+    cursor=native_put_u8(out,cursor,76); cursor=native_put_u8(out,cursor,70);
+    cursor=native_put_u8(out,cursor,2);   // ELFCLASS64
+    cursor=native_put_u8(out,cursor,1);   // little endian
+    cursor=native_put_u8(out,cursor,1);   // current version
+    cursor=native_put_u8(out,cursor,0);   // System V ABI
+    cursor=native_zero(out,cursor,8);
+
+    cursor=native_put_u16(out,cursor,2);  // ET_EXEC
+    cursor=native_put_u16(out,cursor,62); // EM_X86_64
+    cursor=native_put_u32(out,cursor,1);
+    cursor=native_put_u64(out,cursor,NATIVE_ELF_BASE+NATIVE_ELF_CODE_OFFSET);
+    cursor=native_put_u64(out,cursor,64); // program-header offset
+    cursor=native_put_u64(out,cursor,0);  // no section table
+    cursor=native_put_u32(out,cursor,0);
+    cursor=native_put_u16(out,cursor,64);
+    cursor=native_put_u16(out,cursor,56);
+    cursor=native_put_u16(out,cursor,2);
+    cursor=native_put_u16(out,cursor,0);
+    cursor=native_put_u16(out,cursor,0);
+    cursor=native_put_u16(out,cursor,0);
+
+    // PT_LOAD from file offset zero, mapped at 0x400000, read+execute.
+    cursor=native_put_u32(out,cursor,1);
+    cursor=native_put_u32(out,cursor,5);
+    cursor=native_put_u64(out,cursor,0);
+    cursor=native_put_u64(out,cursor,NATIVE_ELF_BASE);
+    cursor=native_put_u64(out,cursor,NATIVE_ELF_BASE);
+    cursor=native_put_u64(out,cursor,file_length);
+    cursor=native_put_u64(out,cursor,file_length);
+    cursor=native_put_u64(out,cursor,4096);
+    assert(cursor == 120);
+
+    // PT_GNU_STACK declares a writable, non-executable process stack.
+    cursor=native_put_u32(out,cursor,1685382481);
+    cursor=native_put_u32(out,cursor,6);
+    cursor=native_put_u64(out,cursor,0); cursor=native_put_u64(out,cursor,0);
+    cursor=native_put_u64(out,cursor,0); cursor=native_put_u64(out,cursor,0);
+    cursor=native_put_u64(out,cursor,0); cursor=native_put_u64(out,cursor,16);
+    assert(cursor == 176);
+
+    cursor=NATIVE_ELF_CODE_OFFSET;
+    cursor=native_copy(out,cursor,code,code_length);
+    assert(cursor == file_length);
+    return ok_i64(file_length);
+}

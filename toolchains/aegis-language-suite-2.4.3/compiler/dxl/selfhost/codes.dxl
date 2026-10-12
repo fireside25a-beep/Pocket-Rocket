@@ -1,0 +1,87 @@
+// Stable token, byte-class, lexer-state, and diagnostic identifiers.
+// Numeric values are part of the compiler interface and must not be reused.
+
+const TK_EOF: i64 = 0;
+const TK_IDENT: i64 = 1;
+const TK_INT: i64 = 2;
+const TK_STRING: i64 = 3;
+const TK_FN: i64 = 4;
+const TK_COMPTIME: i64 = 5;
+const TK_CONST: i64 = 6;
+const TK_LET: i64 = 7;
+const TK_RETURN: i64 = 8;
+const TK_IF: i64 = 9;
+const TK_ELSE: i64 = 10;
+const TK_WHILE: i64 = 11;
+const TK_TRUE: i64 = 12;
+const TK_FALSE: i64 = 13;
+const TK_EXPORT: i64 = 14;
+const TK_EXTERN: i64 = 15;
+const TK_TEST: i64 = 16;
+const TK_ASSERT: i64 = 17;
+const TK_IMPORT: i64 = 18;
+const TK_STRUCT: i64 = 19;
+const TK_ENUM: i64 = 20;
+const TK_AS: i64 = 21;
+const TK_I64: i64 = 22;
+const TK_I32: i64 = 23;
+const TK_BOOL: i64 = 24;
+const TK_VOID: i64 = 25;
+const TK_ARRAY_I64: i64 = 26;
+const TK_SLICE_I64: i64 = 27;
+const TK_RESULT_I64: i64 = 28;
+const TK_LPAREN: i64 = 29;
+const TK_RPAREN: i64 = 30;
+const TK_LBRACE: i64 = 31;
+const TK_RBRACE: i64 = 32;
+const TK_LBRACKET: i64 = 33;
+const TK_RBRACKET: i64 = 34;
+const TK_COLON: i64 = 35;
+const TK_SEMI: i64 = 36;
+const TK_COMMA: i64 = 37;
+const TK_DOT: i64 = 38;
+const TK_ARROW: i64 = 39;
+const TK_ASSIGN: i64 = 40;
+const TK_PLUS: i64 = 41;
+const TK_MINUS: i64 = 42;
+const TK_STAR: i64 = 43;
+const TK_SLASH: i64 = 44;
+const TK_PERCENT: i64 = 45;
+const TK_EQ: i64 = 46;
+const TK_NE: i64 = 47;
+const TK_LT: i64 = 48;
+const TK_LE: i64 = 49;
+const TK_GT: i64 = 50;
+const TK_GE: i64 = 51;
+const TK_AND: i64 = 52;
+const TK_OR: i64 = 53;
+const TK_BANG: i64 = 54;
+
+const BC_OTHER: i64 = 0;
+const BC_SPACE: i64 = 1;
+const BC_IDENT: i64 = 2;
+const BC_DIGIT: i64 = 3;
+const BC_QUOTE: i64 = 4;
+const BC_SLASH: i64 = 5;
+const BC_SYMBOL: i64 = 6;
+
+const LS_POS: i64 = 0;
+const LS_LINE: i64 = 1;
+const LS_COLUMN: i64 = 2;
+const LS_TOKEN_COUNT: i64 = 3;
+const LS_DIAG_COUNT: i64 = 4;
+const LS_FATAL: i64 = 5;
+const LS_SLOTS: i64 = 6;
+
+const LX_E_INVALID_BYTE: i64 = 1001;
+const LX_E_UNTERMINATED_STRING: i64 = 1002;
+const LX_E_UNTERMINATED_COMMENT: i64 = 1003;
+const LX_E_INVALID_ESCAPE: i64 = 1004;
+const LX_E_INTEGER_OVERFLOW: i64 = 1005;
+const LX_E_INVALID_INTEGER: i64 = 1006;
+const LX_E_TABLE_CAPACITY: i64 = 1007;
+const LX_E_DIAGNOSTIC_CAPACITY: i64 = 1008;
+const LX_E_TOKEN_CAPACITY: i64 = 1010;
+
+const KEYWORD_COUNT: i64 = 25;
+const KEYWORD_BYTE_COUNT: i64 = 126;

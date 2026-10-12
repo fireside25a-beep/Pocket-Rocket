@@ -1,0 +1,8 @@
+fn main() -> i32 {
+    let low: i64 = -9223372036854775807 - 1;
+    let zero: i64 = 0;
+    print_i64(low);
+    print_i64(zero);
+    print_i64(-1234567890);
+    return as(i32, 0);
+}

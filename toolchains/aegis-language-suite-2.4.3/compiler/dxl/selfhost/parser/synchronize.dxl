@@ -1,0 +1,34 @@
+import "model.dxl";
+
+fn token_is_declaration_start(kind:i64)->bool {
+    return kind==TK_IMPORT||kind==TK_CONST||kind==TK_STRUCT||kind==TK_ENUM||
+        kind==TK_FN||kind==TK_TEST||kind==TK_COMPTIME;
+}
+
+fn token_is_statement_start(kind:i64)->bool {
+    return kind==TK_LET||kind==TK_RETURN||kind==TK_ASSERT||kind==TK_IF||kind==TK_WHILE;
+}
+
+// The origin is the token where the failed parse construct began. The result
+// is either EOF or a position strictly beyond origin, even if the caller asks
+// for synchronization without having consumed anything.
+fn synchronize_declaration(kinds:slice_i64,pos0:i64,count:i64,origin:i64)->SyncResult {
+    let pos:i64=pos0;
+    if pos<0 { pos=0; }
+    if pos<=origin&&pos<count&&kinds[pos]!=TK_EOF { pos=pos+1; }
+    while pos<count&&kinds[pos]!=TK_EOF&&!token_is_declaration_start(kinds[pos]) { pos=pos+1; }
+    let eof:bool=pos>=count;
+    if !eof { eof=kinds[pos]==TK_EOF; }
+    return SyncResult{pos:pos,progressed:pos>origin||eof,at_eof:eof};
+}
+
+fn synchronize_statement(kinds:slice_i64,pos0:i64,count:i64,origin:i64)->SyncResult {
+    let pos:i64=pos0;
+    if pos<0 { pos=0; }
+    if pos<=origin&&pos<count&&kinds[pos]!=TK_EOF&&kinds[pos]!=TK_RBRACE { pos=pos+1; }
+    while pos<count&&kinds[pos]!=TK_EOF&&kinds[pos]!=TK_RBRACE&&kinds[pos]!=TK_SEMI&&
+        !token_is_statement_start(kinds[pos]) { pos=pos+1; }
+    let eof:bool=pos>=count;
+    if !eof { eof=kinds[pos]==TK_EOF; }
+    return SyncResult{pos:pos,progressed:pos>origin||eof||(!eof&&kinds[pos]==TK_RBRACE),at_eof:eof};
+}

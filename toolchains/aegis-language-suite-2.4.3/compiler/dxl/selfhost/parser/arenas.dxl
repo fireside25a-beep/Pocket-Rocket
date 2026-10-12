@@ -1,0 +1,51 @@
+import "model.dxl";
+
+fn ast_put(
+    kinds:slice_i64,parents:slice_i64,spans:slice_i64,types:slice_i64,
+    count:i64,kind:i64,parent:i64,span:i64,type_id:i64
+)->result_i64 {
+    if count<0||count>=array_len(kinds) { return err_i64(as(i32,3101)); }
+    if array_len(parents)!=array_len(kinds)||array_len(spans)!=array_len(kinds)||array_len(types)!=array_len(kinds) {
+        return err_i64(as(i32,3102));
+    }
+    if parent>=count||parent< -1||span<0||type_id< -1 { return err_i64(as(i32,3103)); }
+    kinds[count]=kind; parents[count]=parent; spans[count]=span; types[count]=type_id;
+    return ok_i64(count);
+}
+
+fn type_put(
+    kinds:slice_i64,name_starts:slice_i64,name_lengths:slice_i64,
+    arg_starts:slice_i64,arg_counts:slice_i64,ownership:slice_i64,
+    count:i64,kind:i64,name_start:i64,name_length:i64,arg_start:i64,arg_count:i64,owner:i64
+)->result_i64 {
+    if count<0||count>=array_len(kinds) { return err_i64(as(i32,3201)); }
+    if array_len(name_starts)!=array_len(kinds)||array_len(name_lengths)!=array_len(kinds) { return err_i64(as(i32,3202)); }
+    if array_len(arg_starts)!=array_len(kinds)||array_len(arg_counts)!=array_len(kinds)||array_len(ownership)!=array_len(kinds) {
+        return err_i64(as(i32,3203));
+    }
+    if name_start<0||name_length<0||arg_start<0||arg_count<0 { return err_i64(as(i32,3204)); }
+    if owner!=OWN_PLAIN&&owner!=OWN_OWNED&&owner!=OWN_BORROWED { return err_i64(as(i32,3205)); }
+    kinds[count]=kind; name_starts[count]=name_start; name_lengths[count]=name_length;
+    arg_starts[count]=arg_start; arg_counts[count]=arg_count; ownership[count]=owner;
+    return ok_i64(count);
+}
+
+fn diagnostic_put(
+    codes:slice_i64,spans:slice_i64,contexts:slice_i64,
+    count:i64,code:i64,span:i64,context:i64
+)->result_i64 {
+    if count<0||count>=array_len(codes) { return err_i64(as(i32,3301)); }
+    if array_len(spans)!=array_len(codes)||array_len(contexts)!=array_len(codes) { return err_i64(as(i32,3302)); }
+    if code<=0||span<0 { return err_i64(as(i32,3303)); }
+    codes[count]=code; spans[count]=span; contexts[count]=context;
+    return ok_i64(count);
+}
+
+fn diagnostic_has(codes:slice_i64,count:i64,code:i64)->bool {
+    let i:i64=0;
+    while i<count {
+        if codes[i]==code { return true; }
+        i=i+1;
+    }
+    return false;
+}

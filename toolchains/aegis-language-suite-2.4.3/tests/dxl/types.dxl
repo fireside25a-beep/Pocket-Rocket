@@ -1,0 +1,9 @@
+enum State { Idle, Ready, Done }
+struct Pair { left: i64, right: i64, state: State }
+fn sum(p: Pair) -> i64 { return p.left + p.right; }
+fn main() -> i32 {
+    let p: Pair = Pair{left: 18, right: 24, state: State.Ready};
+    assert(p.state == State.Ready);
+    print_i64(sum(p));
+    return as(i32, 0);
+}

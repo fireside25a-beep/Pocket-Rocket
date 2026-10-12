@@ -1,0 +1,5 @@
+language	source	result	evidence
+DXL	examples/loops/dxl/counter.dxl	PASS	dxl-counter.check + dxl-counter.tir
+DXL-native	examples/loops/dxl/native_counter.dxl	PASS	dxl-native-counter.bin + .audit + .out
+DXS	examples/loops/dxs/counter.dxs	PASS	dxs-counter.proof
+DXASM	examples/loops/dxasm/counter.dxasm	PASS	dxasm-counter.proof

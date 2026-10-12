@@ -1,0 +1,2 @@
+# bounded structured loop
+0 repeat:5 1 + end print

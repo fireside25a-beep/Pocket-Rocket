@@ -1,0 +1,64 @@
+import "profile_compiler.dxl";
+import "../../../runtime/native/elf64_executable.dxl";
+
+// Usage: dxl-native INPUT.dxl OUTPUT [MODE_FILE]
+// MODE_FILE contains one byte: 'm' requires a main program and 't' requires
+// test blocks. Omitting it accepts either form for the low-level interface.
+// The output bytes form a static Linux x86-64 ELF executable.  The surrounding
+// command driver is responsible for applying executable file permissions.
+fn main() -> i32 {
+    if arg_count()!=3 && arg_count()!=4 { print_i32(as(i32,2790)); return as(i32,2); }
+
+    let expected_mode:i64=0;
+    if arg_count()==4 {
+        let mode_owner:array_i64=read_arg_bytes(3);
+        let mode_error:bool=false;
+        if array_len(mode_owner)!=1 { mode_error=true; }
+        else {
+            let mode:slice_i64=slice(mode_owner,0,1);
+            if mode[0]==109 { expected_mode=1; }
+            else if mode[0]==116 { expected_mode=2; }
+            else { mode_error=true; }
+        }
+        array_free(mode_owner);
+        if mode_error {
+            print_i32(as(i32,2790));
+            return as(i32,2);
+        }
+    }
+
+    let source_owner:array_i64=read_arg_bytes(1);
+    let rc:i32=as(i32,0);
+    if array_len(source_owner)>65536 {
+        print_i32(as(i32,2728));
+        rc=as(i32,1);
+    } else {
+        let source:slice_i64=slice(source_owner,0,array_len(source_owner));
+        let code_capacity:i64=array_len(source)*64+16384;
+        let code_owner:array_i64=array_new(code_capacity,0);
+        let code:slice_i64=slice(code_owner,0,array_len(code_owner));
+        let compiled:result_i64=native_profile_compile(source,code,expected_mode);
+        if is_err(compiled) {
+            print_i32(error_code(compiled));
+            rc=as(i32,1);
+        } else {
+            let code_length:i64=unwrap_i64(compiled);
+            let output_owner:array_i64=array_new(NATIVE_ELF_CODE_OFFSET+code_length,0);
+            let output:slice_i64=slice(output_owner,0,array_len(output_owner));
+            let wrapped:result_i64=native_emit_elf64_executable(output,code,code_length);
+            if is_err(wrapped) {
+                print_i32(error_code(wrapped));
+                rc=as(i32,1);
+            } else {
+                let payload:slice_i64=slice(output_owner,0,unwrap_i64(wrapped));
+                let written:result_i64=write_arg_bytes(2,payload);
+                if is_err(written) { print_i32(as(i32,2791)); rc=as(i32,1); }
+            }
+            array_free(output_owner);
+        }
+        array_free(code_owner);
+    }
+
+    array_free(source_owner);
+    return rc;
+}

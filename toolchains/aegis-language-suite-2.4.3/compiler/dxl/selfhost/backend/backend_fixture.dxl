@@ -1,0 +1,22 @@
+import "elf64_x86_64.dxl";
+
+// Driver for deterministic object-layout development tests.
+// Usage: backend_fixture OUTPUT.o
+fn main()->i32 {
+    if arg_count()!=2 { print_i32(BACKEND_ERROR_BAD_ARGUMENTS); return as(i32,2); }
+    let object_owner:array_i64=array_new(BACKEND_ELF_CAPACITY,0);
+    let object:slice_i64=slice(object_owner,0,array_len(object_owner));
+    let built:result_i64=backend_build_elf64_x86_64(object);
+    let rc:i32=as(i32,0);
+    if is_err(built) {
+        print_i32(error_code(built));
+        rc=as(i32,1);
+    } else {
+        let used:i64=unwrap_i64(built);
+        let payload:slice_i64=slice(object_owner,0,used);
+        let written:result_i64=write_arg_bytes(1,payload);
+        if is_err(written) { print_i32(BACKEND_ERROR_WRITE_FAILED); rc=as(i32,1); }
+    }
+    array_free(object_owner);
+    return rc;
+}

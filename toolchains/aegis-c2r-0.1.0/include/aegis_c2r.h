@@ -1,0 +1,5 @@
+#ifndef AEGIS_C2R_H
+#define AEGIS_C2R_H
+#define AEGIS_C2R_VERSION "0.1.0"
+#define AEGIS_C2R_PROFILE "S0-DEFINED-I32"
+#endif

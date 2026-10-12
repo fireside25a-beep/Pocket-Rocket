@@ -1,0 +1,15 @@
+import "../../stdlib/deterministic_collections.dxl";
+import "../../stdlib/serialization.dxl";
+fn main()->i32 {
+    let ko:array_i64=array_new(8,0); let vo:array_i64=array_new(8,0);
+    let k:slice_i64=slice(ko,0,array_len(ko)); let v:slice_i64=slice(vo,0,array_len(vo));
+    let count:i64=0;
+    let r:result_i64=ordered_put(k,v,count,9,90); if is_err(r){return as(i32,1);} count=unwrap_i64(r);
+    r=ordered_put(k,v,count,-3,30); if is_err(r){return as(i32,1);} count=unwrap_i64(r);
+    r=ordered_put(k,v,count,4,40); if is_err(r){return as(i32,1);} count=unwrap_i64(r);
+    let bo:array_i64=array_new(8,0); let b:slice_i64=slice(bo,0,array_len(bo));
+    r=store_i64_le(b,0,k[0]); if is_err(r){return as(i32,1);}
+    let q:result_i64=load_i64_le(b,0); if is_err(q){return as(i32,1);}
+    print_i64(count); print_i64(k[0]); print_i64(k[1]); print_i64(k[2]); print_i64(unwrap_i64(q));
+    array_free(bo); array_free(vo); array_free(ko); return as(i32,0);
+}

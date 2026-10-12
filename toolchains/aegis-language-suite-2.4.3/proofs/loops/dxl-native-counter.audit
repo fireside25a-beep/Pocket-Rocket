@@ -1,0 +1,9 @@
+artifact	dxl-native-counter.bin
+format	ELF64 little-endian
+type	ET_EXEC
+machine	x86-64
+load_segments	1
+interpreter	none
+dynamic_dependencies	none
+stack	read-write non-executable
+sha256	7bf0f76605fe556dc252af91b22b4022807bcdf243ad181002a89515bfa2829b

@@ -1,0 +1,26 @@
+# module:banner begin
+namespace:banner
+# Owned bytes become an immutable slice before output.
+buffer:4465787220416567697320322e34207465726e6172793a20 buffer::freeze 0 24 bytes::slice bytes::write free
+
+endnamespace
+# module:banner end
+
+# module:unicode begin
+namespace:unicode
+# UTF-8 text is validated by the compiler and verifier.
+text:e29c9320 text::write free
+
+endnamespace
+# module:unicode end
+
+# module:result begin
+namespace:result
+# Structured error as a value, then explicit extraction.
+error:7 error::code print
+# Balanced ternary +0- is decimal 8; trit::not yields -8.
+t:+0- trit::not print
+
+endnamespace
+# module:result end
+

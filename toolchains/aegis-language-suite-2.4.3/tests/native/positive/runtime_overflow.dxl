@@ -1,0 +1,6 @@
+fn main() -> i32 {
+    let maximum: i64 = 9223372036854775807;
+    let overflow: i64 = maximum + 1;
+    print_i64(overflow);
+    return as(i32, 0);
+}

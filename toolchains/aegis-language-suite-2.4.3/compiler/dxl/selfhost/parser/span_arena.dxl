@@ -1,0 +1,78 @@
+import "model.dxl";
+
+fn span_values_valid(file:i64,start:i64,end:i64,start_line:i64,start_col:i64,end_line:i64,end_col:i64)->bool {
+    if file<0||start<0||end<start { return false; }
+    if start_line<1||start_col<1||end_line<start_line||end_col<1 { return false; }
+    if end_line==start_line&&end_col<start_col { return false; }
+    return true;
+}
+
+fn span_put(
+    files:slice_i64,starts:slice_i64,ends:slice_i64,
+    start_lines:slice_i64,start_cols:slice_i64,end_lines:slice_i64,end_cols:slice_i64,
+    count:i64,file:i64,start:i64,end:i64,start_line:i64,start_col:i64,end_line:i64,end_col:i64
+)->result_i64 {
+    if count<0||count>=array_len(files) { return err_i64(as(i32,3001)); }
+    if array_len(starts)!=array_len(files)||array_len(ends)!=array_len(files) { return err_i64(as(i32,3002)); }
+    if array_len(start_lines)!=array_len(files)||array_len(start_cols)!=array_len(files) { return err_i64(as(i32,3003)); }
+    if array_len(end_lines)!=array_len(files)||array_len(end_cols)!=array_len(files) { return err_i64(as(i32,3004)); }
+    if !span_values_valid(file,start,end,start_line,start_col,end_line,end_col) { return err_i64(as(i32,3005)); }
+    files[count]=file; starts[count]=start; ends[count]=end;
+    start_lines[count]=start_line; start_cols[count]=start_col;
+    end_lines[count]=end_line; end_cols[count]=end_col;
+    return ok_i64(count);
+}
+
+fn span_read(
+    files:slice_i64,starts:slice_i64,ends:slice_i64,
+    start_lines:slice_i64,start_cols:slice_i64,end_lines:slice_i64,end_cols:slice_i64,
+    count:i64,id:i64
+)->SpanValue {
+    if id<0||id>=count||id>=array_len(files) {
+        return SpanValue{ok:false,file:0,start:0,end:0,start_line:1,start_col:1,end_line:1,end_col:1};
+    }
+    return SpanValue{
+        ok:true,file:files[id],start:starts[id],end:ends[id],
+        start_line:start_lines[id],start_col:start_cols[id],
+        end_line:end_lines[id],end_col:end_cols[id]
+    };
+}
+
+fn span_join_values(a:SpanValue,b:SpanValue)->SpanValue {
+    if !a.ok||!b.ok||a.file!=b.file||b.start<a.start||b.end<a.end {
+        return SpanValue{ok:false,file:0,start:0,end:0,start_line:1,start_col:1,end_line:1,end_col:1};
+    }
+    return SpanValue{
+        ok:true,file:a.file,start:a.start,end:b.end,
+        start_line:a.start_line,start_col:a.start_col,
+        end_line:b.end_line,end_col:b.end_col
+    };
+}
+
+fn span_contains_values(parent:SpanValue,child:SpanValue)->bool {
+    if !parent.ok||!child.ok||parent.file!=child.file { return false; }
+    return parent.start<=child.start&&parent.end>=child.end;
+}
+
+fn span_contains_ids(
+    files:slice_i64,starts:slice_i64,ends:slice_i64,
+    start_lines:slice_i64,start_cols:slice_i64,end_lines:slice_i64,end_cols:slice_i64,
+    count:i64,parent_id:i64,child_id:i64
+)->bool {
+    let parent:SpanValue=span_read(files,starts,ends,start_lines,start_cols,end_lines,end_cols,count,parent_id);
+    let child:SpanValue=span_read(files,starts,ends,start_lines,start_cols,end_lines,end_cols,count,child_id);
+    return span_contains_values(parent,child);
+}
+
+fn span_add_joined(
+    files:slice_i64,starts:slice_i64,ends:slice_i64,
+    start_lines:slice_i64,start_cols:slice_i64,end_lines:slice_i64,end_cols:slice_i64,
+    count:i64,first_id:i64,last_id:i64
+)->result_i64 {
+    let first:SpanValue=span_read(files,starts,ends,start_lines,start_cols,end_lines,end_cols,count,first_id);
+    let last:SpanValue=span_read(files,starts,ends,start_lines,start_cols,end_lines,end_cols,count,last_id);
+    let joined:SpanValue=span_join_values(first,last);
+    if !joined.ok { return err_i64(as(i32,3010)); }
+    return span_put(files,starts,ends,start_lines,start_cols,end_lines,end_cols,count,
+        joined.file,joined.start,joined.end,joined.start_line,joined.start_col,joined.end_line,joined.end_col);
+}

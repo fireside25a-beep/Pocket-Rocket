@@ -1,0 +1,279 @@
+import "codes.dxl";
+import "span.dxl";
+import "diagnostics.dxl";
+import "byte_tables.dxl";
+
+struct LexerResult {
+    ok: bool,
+    token_count: i64,
+    diagnostic_count: i64,
+    fatal_code: i64,
+}
+
+fn lexer_peek(src: slice_i64, state: slice_i64, offset: i64) -> i64 {
+    let at: i64=state[LS_POS]+offset;
+    if at<0||at>=array_len(src) { return -1; }
+    return src[at];
+}
+
+fn lexer_take(src: slice_i64, state: slice_i64) -> i64 {
+    let at: i64=state[LS_POS];
+    if at>=array_len(src) { return -1; }
+    let value: i64=src[at];
+    state[LS_POS]=at+1;
+    if value==10 { state[LS_LINE]=state[LS_LINE]+1;state[LS_COLUMN]=1; }
+    else { state[LS_COLUMN]=state[LS_COLUMN]+1; }
+    return value;
+}
+
+fn lexer_emit(
+    state: slice_i64,
+    kinds: slice_i64,
+    starts: slice_i64,
+    ends: slice_i64,
+    lines: slice_i64,
+    columns: slice_i64,
+    files: slice_i64,
+    values: slice_i64,
+    kind: i64,
+    start: i64,
+    finish: i64,
+    line: i64,
+    column: i64,
+    file: i64,
+    value: i64
+) -> bool {
+    let at: i64=state[LS_TOKEN_COUNT];
+    if at>=array_len(kinds)||at>=array_len(starts)||at>=array_len(ends)||at>=array_len(lines)||at>=array_len(columns)||at>=array_len(files)||at>=array_len(values) {
+        state[LS_FATAL]=LX_E_TOKEN_CAPACITY;
+        return false;
+    }
+    kinds[at]=kind;starts[at]=start;ends[at]=finish;
+    lines[at]=line;columns[at]=column;files[at]=file;values[at]=value;
+    state[LS_TOKEN_COUNT]=at+1;
+    return true;
+}
+
+fn lexer_record(
+    state: slice_i64,
+    diag_codes: slice_i64,
+    diag_starts: slice_i64,
+    diag_ends: slice_i64,
+    diag_lines: slice_i64,
+    diag_columns: slice_i64,
+    diag_files: slice_i64,
+    code: i64,
+    start: i64,
+    finish: i64,
+    line: i64,
+    column: i64,
+    file: i64
+) -> bool {
+    return diagnostic_push(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,code,start,finish,line,column,file);
+}
+
+fn lexer_skip_trivia(
+    src: slice_i64,
+    classes: slice_i64,
+    state: slice_i64,
+    diag_codes: slice_i64,
+    diag_starts: slice_i64,
+    diag_ends: slice_i64,
+    diag_lines: slice_i64,
+    diag_columns: slice_i64,
+    diag_files: slice_i64,
+    file: i64
+) -> void {
+    let scanning: bool=true;
+    while scanning&&state[LS_FATAL]==0 {
+        while state[LS_POS]<array_len(src)&&src[state[LS_POS]]>=0&&src[state[LS_POS]]<256&&classes[src[state[LS_POS]]]==BC_SPACE {
+            lexer_take(src,state);
+        }
+        if lexer_peek(src,state,0)==47&&lexer_peek(src,state,1)==47 {
+            lexer_take(src,state);
+            lexer_take(src,state);
+            while state[LS_POS]<array_len(src)&&lexer_peek(src,state,0)!=10 {
+                lexer_take(src,state);
+            }
+        } else if lexer_peek(src,state,0)==47&&lexer_peek(src,state,1)==42 {
+            let comment_start: i64=state[LS_POS];
+            let comment_line: i64=state[LS_LINE];
+            let comment_column: i64=state[LS_COLUMN];
+            lexer_take(src,state);
+            lexer_take(src,state);
+            let depth: i64=1;
+            while state[LS_POS]<array_len(src)&&depth>0 {
+                if lexer_peek(src,state,0)==47&&lexer_peek(src,state,1)==42 {
+                    lexer_take(src,state);
+                    lexer_take(src,state);
+                    depth=depth+1;
+                } else if lexer_peek(src,state,0)==42&&lexer_peek(src,state,1)==47 {
+                    lexer_take(src,state);
+                    lexer_take(src,state);
+                    depth=depth-1;
+                } else {
+                    lexer_take(src,state);
+                }
+            }
+            if depth>0 {
+                lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_UNTERMINATED_COMMENT,comment_start,state[LS_POS],comment_line,comment_column,file);
+            }
+        } else {
+            scanning=false;
+        }
+    }
+}
+
+fn lexer_digit_value(value: i64, base: i64) -> i64 {
+    if value>=48&&value<=57 { return value-48; }
+    if base==16&&value>=65&&value<=70 { return value-55; }
+    if base==16&&value>=97&&value<=102 { return value-87; }
+    return -1;
+}
+
+fn lex_source(
+    src: slice_i64,
+    file: i64,
+    classes: slice_i64,
+    single_tokens: slice_i64,
+    keyword_bytes: slice_i64,
+    keyword_starts: slice_i64,
+    keyword_lengths: slice_i64,
+    keyword_kinds: slice_i64,
+    state: slice_i64,
+    token_kinds: slice_i64,
+    token_starts: slice_i64,
+    token_ends: slice_i64,
+    token_lines: slice_i64,
+    token_columns: slice_i64,
+    token_files: slice_i64,
+    token_values: slice_i64,
+    diag_codes: slice_i64,
+    diag_starts: slice_i64,
+    diag_ends: slice_i64,
+    diag_lines: slice_i64,
+    diag_columns: slice_i64,
+    diag_files: slice_i64
+) -> LexerResult {
+    state[LS_POS]=0;state[LS_LINE]=1;state[LS_COLUMN]=1;
+    state[LS_TOKEN_COUNT]=0;state[LS_DIAG_COUNT]=0;state[LS_FATAL]=0;
+
+    while state[LS_POS]<array_len(src)&&state[LS_FATAL]==0 {
+        lexer_skip_trivia(src,classes,state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,file);
+        if state[LS_POS]<array_len(src)&&state[LS_FATAL]==0 {
+            let start: i64=state[LS_POS];
+            let line: i64=state[LS_LINE];
+            let column: i64=state[LS_COLUMN];
+            let byte: i64=lexer_peek(src,state,0);
+            let class: i64=BC_OTHER;
+            if byte>=0&&byte<256 { class=classes[byte]; }
+
+            if class==BC_IDENT {
+                lexer_take(src,state);
+                let scanning: bool=true;
+                while state[LS_POS]<array_len(src)&&scanning {
+                    let next: i64=lexer_peek(src,state,0);
+                    if next>=0&&next<256&&(classes[next]==BC_IDENT||classes[next]==BC_DIGIT) {
+                        lexer_take(src,state);
+                    } else { scanning=false; }
+                }
+                let finish: i64=state[LS_POS];
+                let kind: i64=keyword_lookup(src,start,finish-start,keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds);
+                lexer_emit(state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,kind,start,finish,line,column,file,0);
+            } else if class==BC_DIGIT {
+                let base: i64=10;
+                if byte==48&&(lexer_peek(src,state,1)==120||lexer_peek(src,state,1)==88) {
+                    base=16;
+                    lexer_take(src,state);
+                    lexer_take(src,state);
+                }
+                let value: i64=0;
+                let seen: bool=false;
+                let previous_underscore: bool=false;
+                let invalid: bool=false;
+                let overflow: bool=false;
+                let scanning: bool=true;
+                while state[LS_POS]<array_len(src)&&scanning {
+                    let next: i64=lexer_peek(src,state,0);
+                    let digit: i64=lexer_digit_value(next,base);
+                    if next==95 {
+                        if !seen||previous_underscore { invalid=true; }
+                        previous_underscore=true;
+                        lexer_take(src,state);
+                    } else if digit>=0&&digit<base {
+                        if value>(9223372036854775807-digit)/base { overflow=true; }
+                        else if !overflow { value=value*base+digit; }
+                        seen=true;previous_underscore=false;
+                        lexer_take(src,state);
+                    } else { scanning=false; }
+                }
+                if !seen||previous_underscore { invalid=true; }
+                let finish: i64=state[LS_POS];
+                if invalid {
+                    lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_INVALID_INTEGER,start,finish,line,column,file);
+                }
+                if overflow {
+                    lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_INTEGER_OVERFLOW,start,finish,line,column,file);
+                }
+                lexer_emit(state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,TK_INT,start,finish,line,column,file,value);
+            } else if class==BC_QUOTE {
+                lexer_take(src,state);
+                let closed: bool=false;
+                while state[LS_POS]<array_len(src)&&!closed {
+                    if lexer_peek(src,state,0)==34 {
+                        lexer_take(src,state);
+                        closed=true;
+                    } else if lexer_peek(src,state,0)==92 {
+                        let escape_start: i64=state[LS_POS];
+                        let escape_line: i64=state[LS_LINE];
+                        let escape_column: i64=state[LS_COLUMN];
+                        lexer_take(src,state);
+                        if state[LS_POS]<array_len(src) {
+                            let escaped: i64=lexer_peek(src,state,0);
+                            let valid_escape: bool=escaped==34||escaped==48||escaped==92||escaped==110||escaped==114||escaped==116;
+                            lexer_take(src,state);
+                            if !valid_escape {
+                                lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_INVALID_ESCAPE,escape_start,state[LS_POS],escape_line,escape_column,file);
+                            }
+                        } else {
+                            lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_INVALID_ESCAPE,escape_start,state[LS_POS],escape_line,escape_column,file);
+                        }
+                    } else {
+                        lexer_take(src,state);
+                    }
+                }
+                let finish: i64=state[LS_POS];
+                if !closed {
+                    lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_UNTERMINATED_STRING,start,finish,line,column,file);
+                }
+                lexer_emit(state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,TK_STRING,start,finish,line,column,file,0);
+            } else {
+                let kind: i64=-1;
+                if byte==45&&lexer_peek(src,state,1)==62 { kind=TK_ARROW;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==61&&lexer_peek(src,state,1)==61 { kind=TK_EQ;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==33&&lexer_peek(src,state,1)==61 { kind=TK_NE;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==60&&lexer_peek(src,state,1)==61 { kind=TK_LE;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==62&&lexer_peek(src,state,1)==61 { kind=TK_GE;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==38&&lexer_peek(src,state,1)==38 { kind=TK_AND;lexer_take(src,state);lexer_take(src,state); }
+                else if byte==124&&lexer_peek(src,state,1)==124 { kind=TK_OR;lexer_take(src,state);lexer_take(src,state); }
+                else if byte>=0&&byte<256&&single_tokens[byte]>=0 { kind=single_tokens[byte];lexer_take(src,state); }
+                else {
+                    lexer_take(src,state);
+                    lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_INVALID_BYTE,start,state[LS_POS],line,column,file);
+                }
+                if kind>=0 {
+                    lexer_emit(state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,kind,start,state[LS_POS],line,column,file,0);
+                }
+            }
+        }
+    }
+
+    if state[LS_FATAL]==LX_E_TOKEN_CAPACITY {
+        lexer_record(state,diag_codes,diag_starts,diag_ends,diag_lines,diag_columns,diag_files,LX_E_TOKEN_CAPACITY,state[LS_POS],state[LS_POS],state[LS_LINE],state[LS_COLUMN],file);
+    }
+    if state[LS_FATAL]==0 {
+        lexer_emit(state,token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,TK_EOF,state[LS_POS],state[LS_POS],state[LS_LINE],state[LS_COLUMN],file,0);
+    }
+    let good: bool=state[LS_FATAL]==0&&state[LS_DIAG_COUNT]==0;
+    return LexerResult{ok:good,token_count:state[LS_TOKEN_COUNT],diagnostic_count:state[LS_DIAG_COUNT],fatal_code:state[LS_FATAL]};
+}

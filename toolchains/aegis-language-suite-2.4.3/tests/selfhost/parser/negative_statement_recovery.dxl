@@ -1,0 +1,19 @@
+import "test_support.dxl";
+
+fn main()->i32 {
+    let owner:array_i64=array_new(15,0);
+    let tokens:slice_i64=slice(owner,0,array_len(owner));
+    tokens[0]=TK_FN; tokens[1]=TK_IDENT; tokens[2]=TK_LBRACE;
+    tokens[3]=TK_BAD; tokens[4]=TK_BAD;
+    tokens[5]=TK_LET; tokens[6]=TK_IDENT; tokens[7]=TK_SEMI;
+    tokens[8]=TK_RETURN; tokens[9]=TK_BAD; tokens[10]=TK_SEMI;
+    tokens[11]=TK_ASSERT; tokens[12]=TK_SEMI; tokens[13]=TK_RBRACE; tokens[14]=TK_EOF;
+    let report:FixtureReport=run_parser_fixture(tokens,15);
+    assert(report.finished); assert(!report.clean); assert(report.containment);
+    assert(report.ast_count==6); assert(report.diag_count==2); assert(report.progress_failures==0);
+    assert(report.first_code==DIAG_EXPECTED_STMT); assert(report.second_code==DIAG_EXPECTED_SEMI);
+    assert(report.ast_digest==31612256);
+    print_i64(report.diag_count); print_i64(report.first_code); print_i64(report.second_code);
+    print_i64(report.ast_count); print_i64(report.ast_digest); print_bool(report.containment);
+    array_free(owner); return as(i32,0);
+}

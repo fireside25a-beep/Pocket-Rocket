@@ -1,0 +1,12 @@
+fn main() -> i32 {
+    let value: i64 = 7 * 6;
+    if value == 42 && true {
+        print_i64(value);
+    } else {
+        print_i64(-1);
+    }
+    if value != 41 || false {
+        print_i64(value - 2);
+    }
+    return as(i32, 0);
+}

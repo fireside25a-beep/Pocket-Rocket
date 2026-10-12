@@ -1,0 +1,7 @@
+# Increment a single value through a bounded structured loop.
+0
+repeat:10
+1 +
+end
+print
+halt

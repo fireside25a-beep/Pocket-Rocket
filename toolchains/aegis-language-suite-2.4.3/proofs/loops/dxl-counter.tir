@@ -1,0 +1,4 @@
+aegis-tir 2.4.3 target x86_64-unknown-linux-gnu
+const loop_result : i64 = (call count_to : i64 (i64 10))
+fn count_to (limit:i64) -> i64 comptime
+fn main () -> i32

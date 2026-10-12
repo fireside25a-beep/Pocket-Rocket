@@ -1,0 +1,80 @@
+// Deterministic checked byte emission for the self-hosting backend foundation.
+
+fn bw_put_u8(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(at >= 0 && at < array_len(out));
+    assert(value >= 0 && value <= 255);
+    out[at] = value;
+    return at + 1;
+}
+
+fn bw_put_u16(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0 && value <= 65535);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    cursor = bw_put_u8(out,cursor,remaining % 256);
+    remaining = remaining / 256;
+    cursor = bw_put_u8(out,cursor,remaining % 256);
+    return cursor;
+}
+
+fn bw_put_u32(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0 && value <= 4294967295);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    let index: i64 = 0;
+    while index < 4 {
+        cursor = bw_put_u8(out,cursor,remaining % 256);
+        remaining = remaining / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn bw_put_u64(out: slice_i64, at: i64, value: i64) -> i64 {
+    assert(value >= 0);
+    let cursor: i64 = at;
+    let remaining: i64 = value;
+    let index: i64 = 0;
+    while index < 8 {
+        cursor = bw_put_u8(out,cursor,remaining % 256);
+        remaining = remaining / 256;
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn bw_zero(out: slice_i64, at: i64, amount: i64) -> i64 {
+    assert(amount >= 0);
+    let cursor: i64 = at;
+    let index: i64 = 0;
+    while index < amount {
+        cursor = bw_put_u8(out,cursor,0);
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn bw_align(out: slice_i64, at: i64, alignment: i64) -> i64 {
+    assert(alignment > 0);
+    let cursor: i64 = at;
+    while cursor % alignment != 0 {
+        cursor = bw_put_u8(out,cursor,0);
+    }
+    return cursor;
+}
+
+fn bw_copy(out: slice_i64, at: i64, source: slice_i64, amount: i64) -> i64 {
+    assert(amount >= 0 && amount <= array_len(source));
+    let cursor: i64 = at;
+    let index: i64 = 0;
+    while index < amount {
+        cursor = bw_put_u8(out,cursor,source[index]);
+        index = index + 1;
+    }
+    return cursor;
+}
+
+fn bw_patch_u32(out: slice_i64, at: i64, value: i64) -> void {
+    let finish: i64 = bw_put_u32(out,at,value);
+    assert(finish == at + 4);
+}

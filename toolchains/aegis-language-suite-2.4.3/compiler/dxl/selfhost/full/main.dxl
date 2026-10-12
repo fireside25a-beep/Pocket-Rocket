@@ -1,0 +1,133 @@
+import "lower.dxl";
+
+// Executable integration driver for the DXL-authored frontend foundation.
+// It consumes the file named by argv[1] and emits a canonical numeric record:
+// fixed header, stable diagnostics, then typed-IR instructions.
+fn main() -> i32 {
+    if arg_count()!=2 { return as(i32,2); }
+
+    let source_owner:array_i64=read_arg_bytes(1);
+    let source:slice_i64=slice(source_owner,0,array_len(source_owner));
+
+    let classes_owner:array_i64=array_new(256,0);let classes:slice_i64=slice(classes_owner,0,array_len(classes_owner));
+    let singles_owner:array_i64=array_new(256,0);let singles:slice_i64=slice(singles_owner,0,array_len(singles_owner));
+    let keyword_bytes_owner:array_i64=array_new(KEYWORD_BYTE_COUNT,0);let keyword_bytes:slice_i64=slice(keyword_bytes_owner,0,array_len(keyword_bytes_owner));
+    let keyword_starts_owner:array_i64=array_new(KEYWORD_COUNT,0);let keyword_starts:slice_i64=slice(keyword_starts_owner,0,array_len(keyword_starts_owner));
+    let keyword_lengths_owner:array_i64=array_new(KEYWORD_COUNT,0);let keyword_lengths:slice_i64=slice(keyword_lengths_owner,0,array_len(keyword_lengths_owner));
+    let keyword_kinds_owner:array_i64=array_new(KEYWORD_COUNT,0);let keyword_kinds:slice_i64=slice(keyword_kinds_owner,0,array_len(keyword_kinds_owner));
+    let lexer_state_owner:array_i64=array_new(LS_SLOTS,0);let lexer_state:slice_i64=slice(lexer_state_owner,0,array_len(lexer_state_owner));
+
+    let token_capacity:i64=32768;
+    let token_kinds_owner:array_i64=array_new(token_capacity,0);let token_kinds:slice_i64=slice(token_kinds_owner,0,array_len(token_kinds_owner));
+    let token_starts_owner:array_i64=array_new(token_capacity,0);let token_starts:slice_i64=slice(token_starts_owner,0,array_len(token_starts_owner));
+    let token_ends_owner:array_i64=array_new(token_capacity,0);let token_ends:slice_i64=slice(token_ends_owner,0,array_len(token_ends_owner));
+    let token_lines_owner:array_i64=array_new(token_capacity,0);let token_lines:slice_i64=slice(token_lines_owner,0,array_len(token_lines_owner));
+    let token_columns_owner:array_i64=array_new(token_capacity,0);let token_columns:slice_i64=slice(token_columns_owner,0,array_len(token_columns_owner));
+    let token_files_owner:array_i64=array_new(token_capacity,0);let token_files:slice_i64=slice(token_files_owner,0,array_len(token_files_owner));
+    let token_values_owner:array_i64=array_new(token_capacity,0);let token_values:slice_i64=slice(token_values_owner,0,array_len(token_values_owner));
+
+    let diagnostic_capacity:i64=2048;
+    let lexer_diag_codes_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_codes:slice_i64=slice(lexer_diag_codes_owner,0,array_len(lexer_diag_codes_owner));
+    let lexer_diag_starts_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_starts:slice_i64=slice(lexer_diag_starts_owner,0,array_len(lexer_diag_starts_owner));
+    let lexer_diag_ends_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_ends:slice_i64=slice(lexer_diag_ends_owner,0,array_len(lexer_diag_ends_owner));
+    let lexer_diag_lines_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_lines:slice_i64=slice(lexer_diag_lines_owner,0,array_len(lexer_diag_lines_owner));
+    let lexer_diag_columns_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_columns:slice_i64=slice(lexer_diag_columns_owner,0,array_len(lexer_diag_columns_owner));
+    let lexer_diag_files_owner:array_i64=array_new(diagnostic_capacity,0);let lexer_diag_files:slice_i64=slice(lexer_diag_files_owner,0,array_len(lexer_diag_files_owner));
+
+    let frontend_state_owner:array_i64=array_new(FULL_STATE_SLOTS,0);let frontend_state:slice_i64=slice(frontend_state_owner,0,array_len(frontend_state_owner));
+    let scope_capacity:i64=4096;
+    let scope_parents_owner:array_i64=array_new(scope_capacity,-1);let scope_parents:slice_i64=slice(scope_parents_owner,0,array_len(scope_parents_owner));
+
+    let ast_capacity:i64=32768;
+    let ast_kinds_owner:array_i64=array_new(ast_capacity,0);let ast_kinds:slice_i64=slice(ast_kinds_owner,0,array_len(ast_kinds_owner));
+    let ast_parents_owner:array_i64=array_new(ast_capacity,0);let ast_parents:slice_i64=slice(ast_parents_owner,0,array_len(ast_parents_owner));
+    let ast_firsts_owner:array_i64=array_new(ast_capacity,0);let ast_firsts:slice_i64=slice(ast_firsts_owner,0,array_len(ast_firsts_owner));
+    let ast_lasts_owner:array_i64=array_new(ast_capacity,0);let ast_lasts:slice_i64=slice(ast_lasts_owner,0,array_len(ast_lasts_owner));
+    let ast_types_owner:array_i64=array_new(ast_capacity,0);let ast_types:slice_i64=slice(ast_types_owner,0,array_len(ast_types_owner));
+    let ast_values_owner:array_i64=array_new(ast_capacity,0);let ast_values:slice_i64=slice(ast_values_owner,0,array_len(ast_values_owner));
+    let ast_name_starts_owner:array_i64=array_new(ast_capacity,0);let ast_name_starts:slice_i64=slice(ast_name_starts_owner,0,array_len(ast_name_starts_owner));
+    let ast_name_lengths_owner:array_i64=array_new(ast_capacity,0);let ast_name_lengths:slice_i64=slice(ast_name_lengths_owner,0,array_len(ast_name_lengths_owner));
+    let ast_scopes_owner:array_i64=array_new(ast_capacity,0);let ast_scopes:slice_i64=slice(ast_scopes_owner,0,array_len(ast_scopes_owner));
+
+    let full_diag_codes_owner:array_i64=array_new(diagnostic_capacity,0);let full_diag_codes:slice_i64=slice(full_diag_codes_owner,0,array_len(full_diag_codes_owner));
+    let full_diag_starts_owner:array_i64=array_new(diagnostic_capacity,0);let full_diag_starts:slice_i64=slice(full_diag_starts_owner,0,array_len(full_diag_starts_owner));
+    let full_diag_ends_owner:array_i64=array_new(diagnostic_capacity,0);let full_diag_ends:slice_i64=slice(full_diag_ends_owner,0,array_len(full_diag_ends_owner));
+    let full_diag_lines_owner:array_i64=array_new(diagnostic_capacity,0);let full_diag_lines:slice_i64=slice(full_diag_lines_owner,0,array_len(full_diag_lines_owner));
+    let full_diag_columns_owner:array_i64=array_new(diagnostic_capacity,0);let full_diag_columns:slice_i64=slice(full_diag_columns_owner,0,array_len(full_diag_columns_owner));
+
+    let symbol_capacity:i64=8192;
+    let symbol_name_starts_owner:array_i64=array_new(symbol_capacity,0);let symbol_name_starts:slice_i64=slice(symbol_name_starts_owner,0,array_len(symbol_name_starts_owner));
+    let symbol_name_lengths_owner:array_i64=array_new(symbol_capacity,0);let symbol_name_lengths:slice_i64=slice(symbol_name_lengths_owner,0,array_len(symbol_name_lengths_owner));
+    let symbol_types_owner:array_i64=array_new(symbol_capacity,0);let symbol_types:slice_i64=slice(symbol_types_owner,0,array_len(symbol_types_owner));
+    let symbol_scopes_owner:array_i64=array_new(symbol_capacity,0);let symbol_scopes:slice_i64=slice(symbol_scopes_owner,0,array_len(symbol_scopes_owner));
+    let symbol_kinds_owner:array_i64=array_new(symbol_capacity,0);let symbol_kinds:slice_i64=slice(symbol_kinds_owner,0,array_len(symbol_kinds_owner));
+    let symbol_nodes_owner:array_i64=array_new(symbol_capacity,0);let symbol_nodes:slice_i64=slice(symbol_nodes_owner,0,array_len(symbol_nodes_owner));
+
+    let tir_capacity:i64=32768;
+    let tir_ops_owner:array_i64=array_new(tir_capacity,0);let tir_ops:slice_i64=slice(tir_ops_owner,0,array_len(tir_ops_owner));
+    let tir_nodes_owner:array_i64=array_new(tir_capacity,0);let tir_nodes:slice_i64=slice(tir_nodes_owner,0,array_len(tir_nodes_owner));
+    let tir_types_owner:array_i64=array_new(tir_capacity,0);let tir_types:slice_i64=slice(tir_types_owner,0,array_len(tir_types_owner));
+    let tir_values_owner:array_i64=array_new(tir_capacity,0);let tir_values:slice_i64=slice(tir_values_owner,0,array_len(tir_values_owner));
+    let tir_parents_owner:array_i64=array_new(tir_capacity,0);let tir_parents:slice_i64=slice(tir_parents_owner,0,array_len(tir_parents_owner));
+    let tir_scopes_owner:array_i64=array_new(tir_capacity,0);let tir_scopes:slice_i64=slice(tir_scopes_owner,0,array_len(tir_scopes_owner));
+
+    let tables_ok:bool=byte_tables_init(classes,singles);
+    let keywords_ok:bool=keyword_table_init(keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds);
+    let lexed:LexerResult=LexerResult{ok:false,token_count:0,diagnostic_count:0,fatal_code:0};
+    let parsed:FullParseReport=FullParseReport{finished:false,clean:false,token_count:0,ast_count:0,diagnostic_count:0,scope_count:0};
+    let semantic:FullSemanticReport=FullSemanticReport{clean:false,symbol_count:0,diagnostic_count:0,typed_count:0};
+    let lowered:FullLowerReport=FullLowerReport{clean:false,instruction_count:0,digest:0};
+    let parse_diag_count:i64=0;
+
+    if tables_ok&&keywords_ok {
+        lexed=lex_source(source,1,classes,singles,keyword_bytes,keyword_starts,keyword_lengths,keyword_kinds,lexer_state,
+            token_kinds,token_starts,token_ends,token_lines,token_columns,token_files,token_values,
+            lexer_diag_codes,lexer_diag_starts,lexer_diag_ends,lexer_diag_lines,lexer_diag_columns,lexer_diag_files);
+        if lexed.fatal_code==0 {
+            parsed=full_parse_tokens(token_kinds,token_starts,token_ends,token_lines,token_columns,token_values,lexed.token_count,
+                frontend_state,scope_parents,ast_kinds,ast_parents,ast_firsts,ast_lasts,ast_types,ast_values,ast_name_starts,
+                ast_name_lengths,ast_scopes,full_diag_codes,full_diag_starts,full_diag_ends,full_diag_lines,full_diag_columns);
+            parse_diag_count=parsed.diagnostic_count;
+            semantic=full_analyze(source,token_starts,token_ends,token_lines,token_columns,lexed.token_count,frontend_state,scope_parents,
+                ast_kinds,ast_parents,ast_firsts,ast_types,ast_name_starts,ast_name_lengths,ast_scopes,parsed.ast_count,
+                symbol_name_starts,symbol_name_lengths,symbol_types,symbol_scopes,symbol_kinds,symbol_nodes,
+                full_diag_codes,full_diag_starts,full_diag_ends,full_diag_lines,full_diag_columns);
+            lowered=full_lower_tir(frontend_state,ast_kinds,ast_parents,ast_types,ast_values,ast_scopes,parsed.ast_count,
+                tir_ops,tir_nodes,tir_types,tir_values,tir_parents,tir_scopes);
+        }
+    } else { frontend_state[FULL_STATE_FATAL]=FULL_E_CAPACITY; }
+
+    print_i64(24301);
+    print_i64(lexed.token_count);print_i64(lexed.diagnostic_count);print_i64(lexed.fatal_code);
+    print_i64(parsed.ast_count);print_i64(parse_diag_count);print_i64(parsed.scope_count);
+    print_i64(semantic.symbol_count);print_i64(semantic.typed_count);print_i64(semantic.diagnostic_count);
+    print_i64(lowered.instruction_count);print_i64(lowered.digest);print_i64(frontend_state[FULL_STATE_FATAL]);
+
+    let i:i64=0;
+    while i<lexed.diagnostic_count {
+        print_i64(lexer_diag_codes[i]);print_i64(lexer_diag_lines[i]);print_i64(lexer_diag_columns[i]);i=i+1;
+    }
+    i=0;
+    while i<semantic.diagnostic_count {
+        print_i64(full_diag_codes[i]);print_i64(full_diag_lines[i]);print_i64(full_diag_columns[i]);i=i+1;
+    }
+    i=0;
+    while i<lowered.instruction_count {
+        print_i64(tir_ops[i]);print_i64(tir_nodes[i]);print_i64(tir_types[i]);
+        print_i64(tir_values[i]);print_i64(tir_parents[i]);print_i64(tir_scopes[i]);i=i+1;
+    }
+
+    let rc:i32=as(i32,0);
+    if !tables_ok||!keywords_ok||lexed.fatal_code!=0||lexed.diagnostic_count!=0||!parsed.clean||!semantic.clean||!lowered.clean { rc=as(i32,1); }
+
+    array_free(tir_scopes_owner);array_free(tir_parents_owner);array_free(tir_values_owner);array_free(tir_types_owner);array_free(tir_nodes_owner);array_free(tir_ops_owner);
+    array_free(symbol_nodes_owner);array_free(symbol_kinds_owner);array_free(symbol_scopes_owner);array_free(symbol_types_owner);array_free(symbol_name_lengths_owner);array_free(symbol_name_starts_owner);
+    array_free(full_diag_columns_owner);array_free(full_diag_lines_owner);array_free(full_diag_ends_owner);array_free(full_diag_starts_owner);array_free(full_diag_codes_owner);
+    array_free(ast_scopes_owner);array_free(ast_name_lengths_owner);array_free(ast_name_starts_owner);array_free(ast_values_owner);array_free(ast_types_owner);array_free(ast_lasts_owner);array_free(ast_firsts_owner);array_free(ast_parents_owner);array_free(ast_kinds_owner);
+    array_free(scope_parents_owner);array_free(frontend_state_owner);
+    array_free(lexer_diag_files_owner);array_free(lexer_diag_columns_owner);array_free(lexer_diag_lines_owner);array_free(lexer_diag_ends_owner);array_free(lexer_diag_starts_owner);array_free(lexer_diag_codes_owner);
+    array_free(token_values_owner);array_free(token_files_owner);array_free(token_columns_owner);array_free(token_lines_owner);array_free(token_ends_owner);array_free(token_starts_owner);array_free(token_kinds_owner);
+    array_free(lexer_state_owner);array_free(keyword_kinds_owner);array_free(keyword_lengths_owner);array_free(keyword_starts_owner);array_free(keyword_bytes_owner);array_free(singles_owner);array_free(classes_owner);
+    array_free(source_owner);
+    return rc;
+}

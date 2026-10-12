@@ -1,0 +1,38 @@
+gate	status	detail
+strict GCC translator build	PASS	67353b4adf800397
+strict Clang translator build	PASS	strict Clang
+GCC path-sensitive analyzer	PASS	gcc -fanalyzer
+ASan+UBSan positive/negative corpus	PASS	8 positive + 18 negative
+CLI identity/version	PASS	aegis-c2r 0.1.0 profile=S0-DEFINED-I32
+positive basic.c	PASS	OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+positive basic_whitespace.c	PASS	OK profile=S0-DEFINED-I32 functions=2 statements=4 expressions=8
+positive branch_loop.c	PASS	OK profile=S0-DEFINED-I32 functions=1 statements=9 expressions=19
+positive calls.c	PASS	OK profile=S0-DEFINED-I32 functions=3 statements=4 expressions=12
+positive logic.c	PASS	OK profile=S0-DEFINED-I32 functions=1 statements=6 expressions=19
+positive neg_rem.c	PASS	OK profile=S0-DEFINED-I32 functions=1 statements=5 expressions=10
+positive precedence.c	PASS	OK profile=S0-DEFINED-I32 functions=1 statements=4 expressions=16
+positive max_literal.c	PASS	OK profile=S0-DEFINED-I32 functions=1 statements=3 expressions=3
+canonical AST whitespace equivalence	PASS	7ac3a585d72b6f0b
+deterministic Rust emission	PASS	823a4a60fa500640
+deterministic AST emission	PASS	7ac3a585d72b6f0b
+deterministic proof JSON emission	PASS	4410e7f2212f9873
+deterministic DXL certificate emission	PASS	6a899895deeca92f
+deterministic DXS certificate emission	PASS	f95a3d7e73bddee1
+deterministic DXASM certificate emission	PASS	c84ac406e8e1e4e9
+independent source SHA-256 binding	PASS	928570e49fd8a40c
+independent AST SHA-256 binding	PASS	7ac3a585d72b6f0b
+independent Rust SHA-256 binding	PASS	823a4a60fa500640
+proof schema/profile/status	PASS	AEGIS-C2R-PROOF/1
+safe-Rust markers and checked lowering	PASS	forbid unsafe + checked arithmetic
+18-case deterministic negative corpus	PASS	18/18 deterministic reject
+256 deterministic source mutations	PASS	MUTATION_PASS total=256 accepted=11 rejected=245
+512-vector corpus inventory	PASS	512 deterministic cases
+arithmetic vectors GCC oracle	PASS	gcc == expected
+arithmetic vectors Clang oracle	PASS	clang == expected
+division/remainder vectors GCC oracle	PASS	gcc == expected
+comparison vectors Clang oracle	PASS	clang == expected
+logic vectors GCC oracle	PASS	gcc == expected
+logic vectors Clang oracle	PASS	clang == expected
+output-path collision rejection	PASS	rejected before write
+Aegis 2.4.0 C-bootstrap 11/11 gate	PASS	11/11 upstream clean-suite gate
+Aegis DXL/DXS/DXASM certificate consensus	PASS	DXL=DXS=DXASM=33570824; repeat bytes exact

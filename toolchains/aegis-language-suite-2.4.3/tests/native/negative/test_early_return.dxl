@@ -1,0 +1,7 @@
+test "cannot skip later tests" {
+    return as(i32, 0);
+}
+
+test "must run" {
+    assert(false);
+}

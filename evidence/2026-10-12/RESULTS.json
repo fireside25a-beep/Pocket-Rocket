@@ -1,0 +1,62 @@
+{
+  "aegis_c2r_0_1_0": {
+    "gates": 37,
+    "status": "PASS"
+  },
+  "aegis_c2r_rustc_optional": {
+    "reason": "rustc not installed",
+    "status": "SKIP"
+  },
+  "aegis_suite_2_4_3_source_vs_shipped_gate": {
+    "reason": "source rebuilt native compiler differs from shipped compiler on this host",
+    "status": "FAIL"
+  },
+  "aegis_suite_2_4_3_standard_check": {
+    "matrix": 40,
+    "regressions": 105,
+    "status": "PASS"
+  },
+  "date": "2026-10-12",
+  "full_model_86_72GB_and_target_ram": {
+    "status": "NOT_RUN"
+  },
+  "gtk_binary": {
+    "status": "NOT_RUN"
+  },
+  "gtk_source_contract_tests": {
+    "count": 6,
+    "status": "PASS"
+  },
+  "log_sha256": {
+    "aegis-maintainer-gate.log": "99d0e9eecf7c32d43bca411b6ff05c5964d94af30b7cbf2e6eb4675cffc48b23",
+    "archive-audit.log": "a50d3d2975f6e226898cc5761960e2815ef52a9d66b650c7e71ec6ab8951a597",
+    "fresh-unzip-qualification.log": "58f6e4e50cab424fcc1a64e8fa660556f9676a03146b50859bd077a684a9f904",
+    "native-clang.log": "d428a3db155f2c7296e58fad13b47555d324630add795d9d8899d96e8376247f",
+    "qualification.log": "0a4f221b083bef6a39d22d5e8910bb6e3c9126e789e8f33994097ac3df144c27"
+  },
+  "platform": "Linux x86_64",
+  "pocket_native_clang": {
+    "phases": [
+      "normal",
+      "asan",
+      "ubsan"
+    ],
+    "status": "PASS"
+  },
+  "pocket_native_gcc": {
+    "phases": [
+      "normal",
+      "asan",
+      "ubsan"
+    ],
+    "status": "PASS"
+  },
+  "python_tests": {
+    "count": 169,
+    "status": "PASS"
+  },
+  "standard_unzip_fresh_extraction_qualification": {
+    "scope": "make qualification in clean GNU unzip extraction",
+    "status": "PASS"
+  }
+}

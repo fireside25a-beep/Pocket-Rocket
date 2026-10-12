@@ -1,0 +1,6 @@
+fn main() -> i32 {
+    let minimum: i64 = -9223372036854775807 - 1;
+    let overflow: i64 = -minimum;
+    print_i64(overflow);
+    return as(i32, 0);
+}

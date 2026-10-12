@@ -1,0 +1,4 @@
+fn main() -> i32 {
+    let invalid: i64 = true;
+    return as(i32, 0);
+}

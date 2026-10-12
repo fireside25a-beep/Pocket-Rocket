@@ -1,0 +1,109 @@
+make: Entering directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'
+rm -f test_native test_envelope test_pocket_rocket test_flat32 test_flat32_dict test_binary32 test_t39_lbit test_ternary_core test_ternary_tcam test_ternary_ssm test_hamming_router test_native-asan test_envelope-asan test_pocket_rocket-asan test_flat32-asan test_flat32_dict-asan test_binary32-asan test_t39_lbit-asan test_ternary_core-asan test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_native-clang test_envelope-clang test_pocket_rocket-clang test_flat32-clang test_flat32_dict-clang test_binary32-clang test_t39_lbit-clang test_ternary_core-clang .native_test_page.nprq .native_test_empty.nprq .native_pocket_empty.pkr .native_pocket_fixture.pkr .native_pocket_corrupt.pkr .native_pocket_truncated.pkr .native_pocket_trailing.pkr .native_pocket_bomb.pkr test_ternary_tcam-asan test_ternary_ssm-asan test_hamming_router-asan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan test_ternary_tcam-clang test_ternary_ssm-clang test_hamming_router-clang test_ternary_tcam-avx2
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c test_native.c -lm -o test_native
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c envelope.c test_envelope.c -lm -o test_envelope
+clang -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c test_flat32.c -lm -o test_flat32
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c test_binary32.c -lm -o test_binary32
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c test_ternary_core.c -lm -o test_ternary_core
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror hamming_router.c test_hamming_router.c -lm -o test_hamming_router
+./test_native
+native tests: PASS
+./test_envelope
+envelope tests: PASS (N=1000 profiles)
+./test_pocket_rocket
+Pocket Rocket tests: PASS
+./test_flat32
+Flat32 tests: PASS
+./test_flat32_dict
+flat32 dictionary tests: ok
+./test_binary32
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+./test_t39_lbit
+T39 Lbit bridge tests: ok
+./test_ternary_core
+exact ternary core tests: PASS
+./test_ternary_tcam
+ternary_tcam: PASS
+./test_ternary_ssm
+ternary_ssm: PASS
+./test_hamming_router
+hamming_router: PASS
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c test_native.c -lm -o test_native-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c envelope.c test_envelope.c -lm -o test_envelope-asan
+clang -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c flat32.c test_flat32.c -lm -o test_flat32-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer binary32.c test_binary32.c -lm -o test_binary32-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer ternary_core.c test_ternary_core.c -lm -o test_ternary_core-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=address -fno-omit-frame-pointer hamming_router.c test_hamming_router.c -lm -o test_hamming_router-asan
+ASAN_OPTIONS=detect_leaks=0 ./test_native-asan
+native tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_envelope-asan
+envelope tests: PASS (N=1000 profiles)
+ASAN_OPTIONS=detect_leaks=0 ./test_pocket_rocket-asan
+Pocket Rocket tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_flat32-asan
+Flat32 tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_flat32_dict-asan
+flat32 dictionary tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_binary32-asan
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_t39_lbit-asan
+T39 Lbit bridge tests: ok
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_core-asan
+exact ternary core tests: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_tcam-asan
+ternary_tcam: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_ternary_ssm-asan
+ternary_ssm: PASS
+ASAN_OPTIONS=detect_leaks=0 ./test_hamming_router-asan
+hamming_router: PASS
+rm -f test_native-asan test_envelope-asan test_pocket_rocket-asan test_flat32-asan test_flat32_dict-asan test_binary32-asan test_t39_lbit-asan test_ternary_core-asan test_ternary_tcam-asan test_ternary_ssm-asan test_hamming_router-asan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c test_native.c -lm -o test_native-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c envelope.c test_envelope.c -lm -o test_envelope-ubsan
+clang -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c flat32.c test_flat32.c -lm -o test_flat32-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer binary32.c test_binary32.c -lm -o test_binary32-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer ternary_core.c test_ternary_core.c -lm -o test_ternary_core-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm-ubsan
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -O1 -g -fsanitize=undefined -fno-omit-frame-pointer hamming_router.c test_hamming_router.c -lm -o test_hamming_router-ubsan
+chmod u+x test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan
+./test_native-ubsan
+native tests: PASS
+./test_envelope-ubsan
+envelope tests: PASS (N=1000 profiles)
+./test_pocket_rocket-ubsan
+Pocket Rocket tests: PASS
+./test_flat32-ubsan
+Flat32 tests: PASS
+./test_flat32_dict-ubsan
+flat32 dictionary tests: ok
+./test_binary32-ubsan
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+./test_t39_lbit-ubsan
+T39 Lbit bridge tests: ok
+./test_ternary_core-ubsan
+exact ternary core tests: PASS
+./test_ternary_tcam-ubsan
+ternary_tcam: PASS
+./test_ternary_ssm-ubsan
+ternary_ssm: PASS
+./test_hamming_router-ubsan
+hamming_router: PASS
+rm -f test_native-ubsan test_envelope-ubsan test_pocket_rocket-ubsan test_flat32-ubsan test_flat32_dict-ubsan test_binary32-ubsan test_t39_lbit-ubsan test_ternary_core-ubsan test_ternary_tcam-ubsan test_ternary_ssm-ubsan test_hamming_router-ubsan
+make: Nothing to be done for 'clean'.
+make: Leaving directory '/mnt/data/Pocket_Rocket_0.4.2_Lumus_ARH_Aegis/native'

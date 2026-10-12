@@ -1,0 +1,26 @@
+const limit: i64 = 4;
+
+fn add_one(value: i64) -> i64 {
+    let next: i64 = value + 1;
+    return next;
+}
+
+fn main() -> i32 {
+    let count: i64 = 0;
+    while count < limit {
+        count = count + 1;
+    }
+    if count == limit {
+        assert(true);
+    } else {
+        assert(false);
+    }
+    let result: i64 = add_one(count);
+    assert(result == 5);
+    return as(i32, 0);
+}
+
+test "typed pipeline" {
+    let local: i64 = 2;
+    assert(local == 2);
+}

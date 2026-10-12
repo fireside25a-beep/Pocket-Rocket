@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+*.bin binary
+*.dxb binary
+*.proof binary
+toolchain/** binary
+toolchain/**/bin/dxlc text eol=lf

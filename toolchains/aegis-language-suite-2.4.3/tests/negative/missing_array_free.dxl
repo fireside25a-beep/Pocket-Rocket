@@ -1,0 +1,1 @@
+fn main() -> i32 { let a: array_i64 = array_new(2, 0); return as(i32, 0); }

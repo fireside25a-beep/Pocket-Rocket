@@ -1,0 +1,144 @@
+// DXL-authored integrated frontend foundation.
+//
+// Storage is deliberately represented by bounded parallel slices. This keeps
+// allocation explicit, makes capacity failures deterministic, and stays inside
+// the verified DXL profile used to build the foundation.
+
+const FULL_STATE_POS: i64 = 0;
+const FULL_STATE_AST_COUNT: i64 = 1;
+const FULL_STATE_DIAG_COUNT: i64 = 2;
+const FULL_STATE_FATAL: i64 = 3;
+const FULL_STATE_SCOPE: i64 = 4;
+const FULL_STATE_NEXT_SCOPE: i64 = 5;
+const FULL_STATE_EXPR_DEPTH: i64 = 6;
+const FULL_STATE_STMT_DEPTH: i64 = 7;
+const FULL_STATE_SLOTS: i64 = 8;
+const FULL_MAX_EXPR_DEPTH: i64 = 128;
+const FULL_MAX_STMT_DEPTH: i64 = 128;
+const FULL_MAX_INFERENCE_WORK: i64 = 4194304;
+
+const FULL_TYPE_UNKNOWN: i64 = 0;
+const FULL_TYPE_I64: i64 = 1;
+const FULL_TYPE_I32: i64 = 2;
+const FULL_TYPE_BOOL: i64 = 3;
+const FULL_TYPE_VOID: i64 = 4;
+const FULL_TYPE_FUNCTION: i64 = 5;
+const FULL_TYPE_NAMED: i64 = 6;
+const FULL_TYPE_ARRAY_I64: i64 = 7;
+const FULL_TYPE_SLICE_I64: i64 = 8;
+const FULL_TYPE_RESULT_I64: i64 = 9;
+
+const FULL_AST_PROGRAM: i64 = 1;
+const FULL_AST_IMPORT: i64 = 2;
+const FULL_AST_CONST: i64 = 3;
+const FULL_AST_FUNCTION: i64 = 4;
+const FULL_AST_PARAM: i64 = 5;
+const FULL_AST_STRUCT: i64 = 6;
+const FULL_AST_FIELD: i64 = 7;
+const FULL_AST_TEST: i64 = 8;
+const FULL_AST_ENUM: i64 = 16;
+const FULL_AST_VARIANT: i64 = 17;
+const FULL_AST_COMPTIME_BLOCK: i64 = 18;
+const FULL_AST_LET: i64 = 9;
+const FULL_AST_ASSIGN: i64 = 10;
+const FULL_AST_RETURN: i64 = 11;
+const FULL_AST_ASSERT: i64 = 12;
+const FULL_AST_WHILE: i64 = 13;
+const FULL_AST_IF: i64 = 14;
+const FULL_AST_EXPR_STMT: i64 = 15;
+const FULL_AST_INT: i64 = 20;
+const FULL_AST_BOOL: i64 = 21;
+const FULL_AST_NAME: i64 = 22;
+const FULL_AST_CALL: i64 = 23;
+const FULL_AST_CAST: i64 = 24;
+const FULL_AST_NEGATE: i64 = 25;
+const FULL_AST_NOT: i64 = 26;
+const FULL_AST_ADD: i64 = 27;
+const FULL_AST_SUB: i64 = 28;
+const FULL_AST_MUL: i64 = 29;
+const FULL_AST_DIV: i64 = 30;
+const FULL_AST_MOD: i64 = 31;
+const FULL_AST_EQ: i64 = 32;
+const FULL_AST_NE: i64 = 33;
+const FULL_AST_LT: i64 = 34;
+const FULL_AST_LE: i64 = 35;
+const FULL_AST_GT: i64 = 36;
+const FULL_AST_GE: i64 = 37;
+const FULL_AST_AND: i64 = 38;
+const FULL_AST_OR: i64 = 39;
+const FULL_AST_INDEX: i64 = 40;
+const FULL_AST_FIELD_ACCESS: i64 = 41;
+const FULL_AST_STRUCT_LITERAL: i64 = 42;
+const FULL_AST_FIELD_VALUE: i64 = 43;
+const FULL_AST_ERROR: i64 = 99;
+
+// Parser diagnostics (14xx), semantic diagnostics (15xx), and lowering
+// diagnostics (16xx) are stable public identifiers for this foundation.
+const FULL_E_EXPECTED_DECL: i64 = 1401;
+const FULL_E_EXPECTED_NAME: i64 = 1402;
+const FULL_E_EXPECTED_TOKEN: i64 = 1403;
+const FULL_E_EXPECTED_TYPE: i64 = 1404;
+const FULL_E_EXPECTED_EXPR: i64 = 1405;
+const FULL_E_EXPECTED_STMT: i64 = 1406;
+const FULL_E_UNCLOSED_BLOCK: i64 = 1407;
+const FULL_E_NESTING_LIMIT: i64 = 1408;
+const FULL_E_PROGRESS: i64 = 1498;
+const FULL_E_CAPACITY: i64 = 1499;
+const FULL_E_DUPLICATE_NAME: i64 = 1501;
+const FULL_E_UNKNOWN_NAME: i64 = 1502;
+const FULL_E_TYPE_MISMATCH: i64 = 1503;
+const FULL_E_CONDITION_BOOL: i64 = 1504;
+const FULL_E_RETURN_TYPE: i64 = 1505;
+const FULL_E_ASSERT_BOOL: i64 = 1506;
+const FULL_E_NOT_CALLABLE: i64 = 1507;
+const FULL_E_UNRESOLVED_TYPE: i64 = 1508;
+const FULL_E_INFERENCE_LIMIT: i64 = 1509;
+const FULL_E_TIR_CAPACITY: i64 = 1601;
+
+const FULL_SYMBOL_VALUE: i64 = 1;
+const FULL_SYMBOL_FUNCTION: i64 = 2;
+const FULL_SYMBOL_TYPE: i64 = 3;
+
+const FULL_TIR_IMPORT: i64 = 1;
+const FULL_TIR_CONST: i64 = 2;
+const FULL_TIR_FUNCTION: i64 = 3;
+const FULL_TIR_PARAM: i64 = 4;
+const FULL_TIR_LET: i64 = 5;
+const FULL_TIR_ASSIGN: i64 = 6;
+const FULL_TIR_RETURN: i64 = 7;
+const FULL_TIR_ASSERT: i64 = 8;
+const FULL_TIR_WHILE: i64 = 9;
+const FULL_TIR_IF: i64 = 10;
+const FULL_TIR_LITERAL: i64 = 20;
+const FULL_TIR_NAME: i64 = 21;
+const FULL_TIR_CALL: i64 = 22;
+const FULL_TIR_CAST: i64 = 23;
+const FULL_TIR_UNARY: i64 = 24;
+const FULL_TIR_BINARY: i64 = 25;
+
+struct FullParseValue {
+    ok: bool,
+    node: i64,
+}
+
+struct FullParseReport {
+    finished: bool,
+    clean: bool,
+    token_count: i64,
+    ast_count: i64,
+    diagnostic_count: i64,
+    scope_count: i64,
+}
+
+struct FullSemanticReport {
+    clean: bool,
+    symbol_count: i64,
+    diagnostic_count: i64,
+    typed_count: i64,
+}
+
+struct FullLowerReport {
+    clean: bool,
+    instruction_count: i64,
+    digest: i64,
+}

@@ -1,0 +1,268 @@
+import "model.dxl";
+import "span_arena.dxl";
+import "arenas.dxl";
+import "synchronize.dxl";
+
+fn parser_token_span(token_spans:slice_i64,token_count:i64,pos:i64)->i64 {
+    if token_count<=0 { return 0; }
+    if pos<0 { return token_spans[0]; }
+    if pos>=token_count { return token_spans[token_count-1]; }
+    return token_spans[pos];
+}
+
+fn parser_add_diagnostic(
+    codes:slice_i64,spans:slice_i64,contexts:slice_i64,count:i64,
+    code:i64,span:i64,context:i64
+)->i64 {
+    let pushed:result_i64=diagnostic_put(codes,spans,contexts,count,code,span,context);
+    if is_err(pushed) { return -1; }
+    return count+1;
+}
+
+fn parser_push_node(
+    token_spans:slice_i64,token_count:i64,first_token:i64,last_token:i64,
+    span_files:slice_i64,span_starts:slice_i64,span_ends:slice_i64,
+    span_start_lines:slice_i64,span_start_cols:slice_i64,span_end_lines:slice_i64,span_end_cols:slice_i64,
+    span_count:i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_spans:slice_i64,ast_types:slice_i64,
+    ast_count:i64,kind:i64,parent:i64,type_id:i64
+)->NodePush {
+    if token_count<=0||first_token<0||first_token>=token_count||last_token<first_token||last_token>=token_count {
+        return NodePush{ok:false,span_count:span_count,ast_count:ast_count,node:-1};
+    }
+    let first_span:i64=token_spans[first_token];
+    let last_span:i64=token_spans[last_token];
+    let joined:result_i64=span_add_joined(
+        span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,
+        span_count,first_span,last_span);
+    if is_err(joined) { return NodePush{ok:false,span_count:span_count,ast_count:ast_count,node:-1}; }
+    let node_span:i64=unwrap_i64(joined);
+    let pushed:result_i64=ast_put(ast_kinds,ast_parents,ast_spans,ast_types,ast_count,kind,parent,node_span,type_id);
+    if is_err(pushed) { return NodePush{ok:false,span_count:span_count,ast_count:ast_count,node:-1}; }
+    return NodePush{ok:true,span_count:span_count+1,ast_count:ast_count+1,node:ast_count};
+}
+
+fn parse_token_stream(
+    kinds:slice_i64,token_spans:slice_i64,token_count:i64,
+    span_files:slice_i64,span_starts:slice_i64,span_ends:slice_i64,
+    span_start_lines:slice_i64,span_start_cols:slice_i64,span_end_lines:slice_i64,span_end_cols:slice_i64,
+    span_count0:i64,
+    ast_kinds:slice_i64,ast_parents:slice_i64,ast_spans:slice_i64,ast_types:slice_i64,ast_count0:i64,
+    type_count:i64,
+    diag_codes:slice_i64,diag_spans:slice_i64,diag_contexts:slice_i64,diag_count0:i64
+)->ParseReport {
+    let pos:i64=0;
+    let span_count:i64=span_count0;
+    let ast_count:i64=ast_count0;
+    let diag_count:i64=diag_count0;
+    let progress_failures:i64=0;
+    let internal_ok:bool=true;
+    let root:i64=-1;
+
+    if token_count<=0||array_len(kinds)<token_count||array_len(token_spans)<token_count {
+        return ParseReport{finished:false,clean:false,pos:0,span_count:span_count,ast_count:ast_count,
+            type_count:type_count,diag_count:diag_count,progress_failures:1};
+    }
+
+    let root_push:NodePush=parser_push_node(
+        token_spans,token_count,0,token_count-1,
+        span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+        ast_kinds,ast_parents,ast_spans,ast_types,ast_count,AST_PROGRAM,-1,-1);
+    if !root_push.ok {
+        return ParseReport{finished:false,clean:false,pos:0,span_count:span_count,ast_count:ast_count,
+            type_count:type_count,diag_count:diag_count,progress_failures:1};
+    }
+    span_count=root_push.span_count; ast_count=root_push.ast_count; root=root_push.node;
+
+    while pos<token_count&&kinds[pos]!=TK_EOF&&internal_ok {
+        let origin:i64=pos;
+        let decl_kind:i64=kinds[pos];
+
+        if decl_kind==TK_CONST {
+            let start:i64=pos;
+            let valid:bool=true;
+            pos=pos+1;
+            if pos>=token_count||kinds[pos]!=TK_IDENT {
+                let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                    DIAG_EXPECTED_IDENT,parser_token_span(token_spans,token_count,pos),TK_CONST);
+                if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                valid=false;
+            } else { pos=pos+1; }
+
+            if valid {
+                if pos<token_count&&kinds[pos]==TK_SEMI { pos=pos+1; }
+                else {
+                    let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                        DIAG_EXPECTED_SEMI,parser_token_span(token_spans,token_count,pos),TK_CONST);
+                    if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                    valid=false;
+                }
+            }
+
+            if !valid&&internal_ok {
+                let synced:SyncResult=synchronize_declaration(kinds,pos,token_count,origin);
+                pos=synced.pos;
+                if !synced.progressed { progress_failures=progress_failures+1; }
+            }
+            let last:i64=pos-1;
+            if last<start { last=start; }
+            if internal_ok {
+                let pushed:NodePush=parser_push_node(
+                    token_spans,token_count,start,last,
+                    span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+                    ast_kinds,ast_parents,ast_spans,ast_types,ast_count,AST_CONST_DECL,root,-1);
+                if !pushed.ok { internal_ok=false; }
+                else { span_count=pushed.span_count; ast_count=pushed.ast_count; }
+            }
+        } else if decl_kind==TK_FN {
+            let start:i64=pos;
+            let fn_valid:bool=true;
+            let fn_node:i64=-1;
+            let open_token:i64=start;
+            pos=pos+1;
+            if pos>=token_count||kinds[pos]!=TK_IDENT {
+                let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                    DIAG_EXPECTED_IDENT,parser_token_span(token_spans,token_count,pos),TK_FN);
+                if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                fn_valid=false;
+            } else { pos=pos+1; }
+            if fn_valid {
+                if pos>=token_count||kinds[pos]!=TK_LBRACE {
+                    let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                        DIAG_EXPECTED_LBRACE,parser_token_span(token_spans,token_count,pos),TK_FN);
+                    if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                    fn_valid=false;
+                } else { open_token=pos; pos=pos+1; }
+            }
+
+            if fn_valid&&internal_ok {
+                let fn_push:NodePush=parser_push_node(
+                    token_spans,token_count,start,open_token,
+                    span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+                    ast_kinds,ast_parents,ast_spans,ast_types,ast_count,AST_FN_DECL,root,-1);
+                if !fn_push.ok { internal_ok=false; }
+                else { span_count=fn_push.span_count; ast_count=fn_push.ast_count; fn_node=fn_push.node; }
+            }
+
+            if !fn_valid&&internal_ok {
+                let synced:SyncResult=synchronize_declaration(kinds,pos,token_count,origin);
+                pos=synced.pos;
+                if !synced.progressed { progress_failures=progress_failures+1; }
+                let last:i64=pos-1; if last<start { last=start; }
+                let err_push:NodePush=parser_push_node(
+                    token_spans,token_count,start,last,
+                    span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+                    ast_kinds,ast_parents,ast_spans,ast_types,ast_count,AST_ERROR,root,-1);
+                if !err_push.ok { internal_ok=false; }
+                else { span_count=err_push.span_count; ast_count=err_push.ast_count; }
+            }
+
+            if fn_valid&&internal_ok {
+                while pos<token_count&&kinds[pos]!=TK_EOF&&kinds[pos]!=TK_RBRACE&&internal_ok {
+                    let statement_origin:i64=pos;
+                    let statement_kind:i64=kinds[pos];
+                    let ast_kind:i64=AST_ERROR;
+                    let known:bool=false;
+                    let statement_valid:bool=true;
+                    let statement_start:i64=pos;
+
+                    if statement_kind==TK_LET {
+                        known=true; ast_kind=AST_LET_STMT; pos=pos+1;
+                        if pos>=token_count||kinds[pos]!=TK_IDENT {
+                            let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                                DIAG_EXPECTED_IDENT,parser_token_span(token_spans,token_count,pos),TK_LET);
+                            if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                            statement_valid=false;
+                        } else { pos=pos+1; }
+                    } else if statement_kind==TK_RETURN {
+                        known=true; ast_kind=AST_RETURN_STMT; pos=pos+1;
+                    } else if statement_kind==TK_ASSERT {
+                        known=true; ast_kind=AST_ASSERT_STMT; pos=pos+1;
+                    } else {
+                        let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                            DIAG_EXPECTED_STMT,parser_token_span(token_spans,token_count,pos),TK_FN);
+                        if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                        statement_valid=false;
+                    }
+
+                    if known&&statement_valid&&internal_ok {
+                        if pos<token_count&&kinds[pos]==TK_SEMI { pos=pos+1; }
+                        else {
+                            let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                                DIAG_EXPECTED_SEMI,parser_token_span(token_spans,token_count,pos),statement_kind);
+                            if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                            statement_valid=false;
+                        }
+                    }
+
+                    if !statement_valid&&internal_ok {
+                        let synced:SyncResult=synchronize_statement(kinds,pos,token_count,statement_origin);
+                        pos=synced.pos;
+                        if !synced.progressed { progress_failures=progress_failures+1; }
+                        if pos<token_count&&kinds[pos]==TK_SEMI { pos=pos+1; }
+                    }
+
+                    let statement_last:i64=pos-1;
+                    if statement_last<statement_start { statement_last=statement_start; }
+                    if internal_ok {
+                        let stmt_push:NodePush=parser_push_node(
+                            token_spans,token_count,statement_start,statement_last,
+                            span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+                            ast_kinds,ast_parents,ast_spans,ast_types,ast_count,ast_kind,fn_node,-1);
+                        if !stmt_push.ok { internal_ok=false; }
+                        else { span_count=stmt_push.span_count; ast_count=stmt_push.ast_count; }
+                    }
+
+                    if pos<=statement_origin&&pos<token_count&&kinds[pos]!=TK_EOF&&kinds[pos]!=TK_RBRACE {
+                        progress_failures=progress_failures+1; pos=statement_origin+1;
+                    }
+                }
+
+                let close_token:i64=pos;
+                if pos<token_count&&kinds[pos]==TK_RBRACE { pos=pos+1; }
+                else {
+                    let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                        DIAG_EXPECTED_RBRACE,parser_token_span(token_spans,token_count,pos),TK_FN);
+                    if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+                    if close_token>=token_count { close_token=token_count-1; }
+                }
+                if internal_ok {
+                    let full_span:result_i64=span_add_joined(
+                        span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,
+                        span_count,token_spans[start],token_spans[close_token]);
+                    if is_err(full_span) { internal_ok=false; }
+                    else { ast_spans[fn_node]=unwrap_i64(full_span); span_count=span_count+1; }
+                }
+            }
+        } else {
+            let next_diag:i64=parser_add_diagnostic(diag_codes,diag_spans,diag_contexts,diag_count,
+                DIAG_EXPECTED_DECL,parser_token_span(token_spans,token_count,pos),decl_kind);
+            if next_diag<0 { internal_ok=false; } else { diag_count=next_diag; }
+            if internal_ok {
+                let synced:SyncResult=synchronize_declaration(kinds,pos,token_count,origin);
+                pos=synced.pos;
+                if !synced.progressed { progress_failures=progress_failures+1; }
+                let last:i64=pos-1; if last<origin { last=origin; }
+                let err_push:NodePush=parser_push_node(
+                    token_spans,token_count,origin,last,
+                    span_files,span_starts,span_ends,span_start_lines,span_start_cols,span_end_lines,span_end_cols,span_count,
+                    ast_kinds,ast_parents,ast_spans,ast_types,ast_count,AST_ERROR,root,-1);
+                if !err_push.ok { internal_ok=false; }
+                else { span_count=err_push.span_count; ast_count=err_push.ast_count; }
+            }
+        }
+
+        if pos<=origin&&pos<token_count&&kinds[pos]!=TK_EOF {
+            progress_failures=progress_failures+1; pos=origin+1;
+        }
+    }
+
+    let at_end:bool=pos>=token_count;
+    if !at_end { at_end=kinds[pos]==TK_EOF; }
+    return ParseReport{
+        finished:internal_ok&&at_end&&progress_failures==0,
+        clean:internal_ok&&at_end&&progress_failures==0&&diag_count==diag_count0,
+        pos:pos,span_count:span_count,ast_count:ast_count,type_count:type_count,
+        diag_count:diag_count,progress_failures:progress_failures
+    };
+}
