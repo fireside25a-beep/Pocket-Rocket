@@ -1,0 +1,29 @@
+Supplemental ASan+UBSan corpus, detect_leaks=0; NOT the official release gate.
+PASS positive/basic.c exit=0; diagnostics=
+PASS positive/basic_whitespace.c exit=0; diagnostics=
+PASS positive/branch_loop.c exit=0; diagnostics=
+PASS positive/calls.c exit=0; diagnostics=
+PASS positive/logic.c exit=0; diagnostics=
+PASS positive/max_literal.c exit=0; diagnostics=
+PASS positive/neg_rem.c exit=0; diagnostics=
+PASS positive/precedence.c exit=0; diagnostics=
+PASS negative/code_after_main.c exit=1; diagnostics=E4011 2:1 main must be final function
+PASS negative/divzero_literal.c exit=1; diagnostics=E5005 1:26 literal divide/remainder by zero
+PASS negative/float.c exit=1; diagnostics=E3024 1:19 only assignment or call statements may begin with identifier
+PASS negative/for.c exit=1; diagnostics=E5007 1:17 call to unknown or forward function
+PASS negative/forward_call.c exit=1; diagnostics=E5001 1:19 call to unknown or forward function
+PASS negative/global.c exit=1; diagnostics=E3042 1:7 expected '(' after function name
+PASS negative/late_decl.c exit=1; diagnostics=E4007 1:31 local declarations must be a prefix of the outer function body
+PASS negative/literal_overflow.c exit=1; diagnostics=E2003 1:20 decimal literal exceeds i32 positive range
+E3003 1:13 expected expression
+PASS negative/main_params.c exit=1; diagnostics=E4014 1:16 main must have no parameters in S0
+PASS negative/missing_return.c exit=1; diagnostics=E5014 2:1 function requires explicit final top-level return
+PASS negative/nested_decl.c exit=1; diagnostics=E4007 1:22 local declarations must be a prefix of the outer function body
+PASS negative/pointer.c exit=1; diagnostics=E3031 1:17 expected local name
+PASS negative/preprocessor.c exit=1; diagnostics=E4000 1:1 unsupported preprocessor directive
+PASS negative/recursion.c exit=1; diagnostics=E5002 1:24 direct recursion is outside S0
+PASS negative/self_init.c exit=1; diagnostics=E5004 1:22 unknown variable
+PASS negative/shadow_printf.c exit=1; diagnostics=E3031 1:17 expected local name
+PASS negative/unknown_var.c exit=1; diagnostics=E5004 1:24 unknown variable
+PASS negative/unsupported_printf.c exit=1; diagnostics=E4006 2:20 only printf("%d\\n", expr) is supported
+CHECKS=26 FAIL=0; leak detection remains NOT QUALIFIED

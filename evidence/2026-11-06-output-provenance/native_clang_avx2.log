@@ -1,0 +1,41 @@
+make: Entering directory '<workspace>/pocket-rocket-review/native'
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c test_native.c -lm -o test_native-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c envelope.c test_envelope.c -lm -o test_envelope-clang
+clang -I. -DNR_HAVE_ZLIB=1 -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c pocket_rocket.c test_pocket_rocket.c -lm -lz -o test_pocket_rocket-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c test_flat32.c -lm -o test_flat32-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror nprq.c flat32.c flat32_dict.c test_flat32_dict.c -lm -o test_flat32_dict-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c test_binary32.c -lm -o test_binary32-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror t39_lbit.c test_t39_lbit.c -lm -o test_t39_lbit-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c test_ternary_core.c -lm -o test_ternary_core-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror binary32.c ternary_ssm.c test_ternary_ssm.c -lm -o test_ternary_ssm-clang
+clang -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror hamming_router.c test_hamming_router.c -lm -o test_hamming_router-clang
+./test_native-clang
+native tests: PASS
+./test_envelope-clang
+envelope tests: PASS (N=1000 profiles)
+./test_pocket_rocket-clang
+Pocket Rocket tests: PASS
+./test_flat32-clang
+Flat32 tests: PASS
+./test_flat32_dict-clang
+flat32 dictionary tests: ok
+./test_binary32-clang
+binary32 x87 gate: x87 accepted: edge vectors match canonical binary32 reference
+binary32 tests: ok
+./test_t39_lbit-clang
+T39 Lbit bridge tests: ok
+./test_ternary_core-clang
+exact ternary core tests: PASS
+./test_ternary_tcam-clang
+ternary_tcam: PASS
+./test_ternary_ssm-clang
+ternary_ssm: PASS
+./test_hamming_router-clang
+hamming_router: PASS
+rm -f test_native-clang test_envelope-clang test_pocket_rocket-clang test_flat32-clang test_flat32_dict-clang test_binary32-clang test_t39_lbit-clang test_ternary_core-clang test_ternary_tcam-clang test_ternary_ssm-clang test_hamming_router-clang test_ternary_tcam-avx2
+cc -I. -std=c11 -O2 -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Werror -mavx2 -mpopcnt ternary_core.c ternary_tcam.c test_ternary_tcam.c -lm -o test_ternary_tcam-avx2
+./test_ternary_tcam-avx2
+ternary_tcam: PASS
+rm -f test_ternary_tcam-avx2
+make: Leaving directory '<workspace>/pocket-rocket-review/native'

@@ -1,0 +1,22 @@
+test_absent_roots_can_still_be_supplied (tests.test_output_provenance.ReceiptIdentityContract.test_absent_roots_can_still_be_supplied) ... ok
+test_cli_inferred_roots_remain_valid (tests.test_output_provenance.ReceiptIdentityContract.test_cli_inferred_roots_remain_valid) ... ok
+test_cli_root_overrides_are_rejected (tests.test_output_provenance.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) ... ok
+test_matching_identity_control (tests.test_output_provenance.ReceiptIdentityContract.test_matching_identity_control) ... ok
+test_model_relabel_must_be_rejected (tests.test_output_provenance.ReceiptIdentityContract.test_model_relabel_must_be_rejected) ... ok
+test_request_relabel_must_be_rejected (tests.test_output_provenance.ReceiptIdentityContract.test_request_relabel_must_be_rejected) ... ok
+test_transcript_tamper_control (tests.test_output_provenance.ReceiptIdentityContract.test_transcript_tamper_control) ... ok
+test_both_large_pipes_are_drained (tests.test_output_provenance.TransportOutputContract.test_both_large_pipes_are_drained) ... ok
+test_diagnostics_must_not_be_returned_as_answer (tests.test_output_provenance.TransportOutputContract.test_diagnostics_must_not_be_returned_as_answer) ... ok
+test_failure_preserves_bounded_diagnostic_tail (tests.test_output_provenance.TransportOutputContract.test_failure_preserves_bounded_diagnostic_tail) ... ok
+test_large_stderr_is_drained_without_answer_contamination (tests.test_output_provenance.TransportOutputContract.test_large_stderr_is_drained_without_answer_contamination) ... ok
+test_nonzero_exit_control (tests.test_output_provenance.TransportOutputContract.test_nonzero_exit_control) ... ok
+test_recursive_proposal_and_answer_hash_exclude_diagnostics (tests.test_output_provenance.TransportOutputContract.test_recursive_proposal_and_answer_hash_exclude_diagnostics) ... ok
+test_stderr_only_must_not_count_as_inference_output (tests.test_output_provenance.TransportOutputContract.test_stderr_only_must_not_count_as_inference_output) ... ok
+test_stdout_answer_control (tests.test_output_provenance.TransportOutputContract.test_stdout_answer_control) ... ok
+test_unterminated_unicode_stdout_is_preserved (tests.test_output_provenance.TransportOutputContract.test_unterminated_unicode_stdout_is_preserved) ... ok
+test_whitespace_stdout_with_diagnostics_is_rejected (tests.test_output_provenance.TransportOutputContract.test_whitespace_stdout_with_diagnostics_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 1.493s
+
+OK
