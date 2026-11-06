@@ -1,0 +1,59 @@
+COMMAND: ['gcc', '--version']
+EXIT: 0
+gcc (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+
+COMMAND: ['ldd', '--version']
+EXIT: 0
+ldd (Debian GLIBC 2.41-12+deb13u4) 2.41
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Written by Roland McGrath and Ulrich Drepper.
+
+
+COMMAND: ['readelf', '-p', '.comment', '/workspace/scratch/938daa843f7d/pocket-rocket-experiment/toolchains/aegis-language-suite-2.4.3/toolchain/linux-x86_64/libexec/dxlc-native']
+EXIT: 0
+
+String dump of section '.comment':
+  [     0]  GCC: (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+
+
+
+COMMAND: ['readelf', '-p', '.comment', '/workspace/scratch/938daa843f7d/pocket-model-research/aegis-rebuilt']
+EXIT: 0
+
+String dump of section '.comment':
+  [     0]  GCC: (Debian 14.2.0-19) 14.2.0
+
+
+
+COMMAND: ['gcc', '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '/workspace/scratch/938daa843f7d/pocket-rocket-pr-evidence/lsan_probe.c', '-o', '/workspace/scratch/938daa843f7d/pocket-model-research/empty-sanitizer-probe']
+EXIT: 0
+
+
+ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
+COMMAND: ['/workspace/scratch/938daa843f7d/pocket-model-research/empty-sanitizer-probe']
+EXIT: 1
+
+==16==LeakSanitizer has encountered a fatal error.
+==16==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
+==16==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)
+
+ASAN_OPTIONS=detect_leaks=0:halt_on_error=1
+COMMAND: ['/workspace/scratch/938daa843f7d/pocket-model-research/empty-sanitizer-probe']
+EXIT: 0
+
+
+Standard cgroup memory files: {'/sys/fs/cgroup/memory.max': False, '/sys/fs/cgroup/memory.current': False, '/sys/fs/cgroup/memory.peak': False}
+Pinned ds4 source: 84cc882352757baf628a1776badf7cc54d584e28
+ds4 SHA256 41b79a12c16775276bb1aebc71cdc6e9dac769af603e29f153f7ce37e114bf5d
+ds4-server SHA256 729e711f42ced60fae687d9f54d1a200fbb2191b0cab1392531ca04300f79db8
+ds4-bench SHA256 c1adfc805648792e027e43d81ad399b9093331707f15cce28d304e92932d505f
+ds4-eval SHA256 2d8b8eebb048db197dbdaf0fae7991304f0ea77de3556406c79009f2ce040696
+ds4-agent SHA256 1fbf96c175760ec815ba0eeab1db2edf374e5d9104fb65f7f8272af31095a291
+Empty sanitizer probe source: int main(void) { return 0; }

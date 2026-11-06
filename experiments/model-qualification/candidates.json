@@ -1,0 +1,66 @@
+{
+  "observed_date": "2026-11-06",
+  "hash_status": "published_metadata_not_full_download_verification",
+  "candidates": [
+    {
+      "id": "qwen35-122b-iq1s",
+      "model_id": "Qwen/Qwen3.5-122B-A10B",
+      "total_parameters_billions": 122,
+      "active_parameters_billions": 10,
+      "gguf_architecture": "qwen35moe",
+      "repository": "bartowski/Qwen_Qwen3.5-122B-A10B-GGUF",
+      "revision": "fec8b222a2eddc3346d6b6d7f7c85efea93cd6bf",
+      "filename": "Qwen_Qwen3.5-122B-A10B-IQ1_S.gguf",
+      "size_bytes": 28902086784,
+      "sha256": "ae086bbf413e961c10c27ac3ede5de7b1d908f8b769b7be753fa87628863bfbf"
+    },
+    {
+      "id": "qwen35-122b-iq1m",
+      "model_id": "Qwen/Qwen3.5-122B-A10B",
+      "total_parameters_billions": 122,
+      "active_parameters_billions": 10,
+      "gguf_architecture": "qwen35moe",
+      "repository": "bartowski/Qwen_Qwen3.5-122B-A10B-GGUF",
+      "revision": "fec8b222a2eddc3346d6b6d7f7c85efea93cd6bf",
+      "filename": "Qwen_Qwen3.5-122B-A10B-IQ1_M.gguf",
+      "size_bytes": 31790258304,
+      "sha256": "39984db48fc7beb1115da4a6de3de64bdee73ac2dbab86b5e8585409df2ffd6f"
+    },
+    {
+      "id": "glm45-air-iq1m",
+      "model_id": "zai-org/GLM-4.5-Air",
+      "total_parameters_billions": 106,
+      "active_parameters_billions": 12,
+      "gguf_architecture": "glm4moe",
+      "repository": "bartowski/zai-org_GLM-4.5-Air-GGUF",
+      "revision": "bd907156c1ca4dd837540eda77043fddfd6d5caf",
+      "filename": "zai-org_GLM-4.5-Air-IQ1_M.gguf",
+      "size_bytes": 37856537056,
+      "sha256": "0a9276e6597caa9816504310567b726f08dd08d51dbf480b2a0fc4d22985ac25"
+    },
+    {
+      "id": "qwen3-next-80b-q2k",
+      "model_id": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+      "total_parameters_billions": 80,
+      "active_parameters_billions": 3,
+      "gguf_architecture": "qwen3next",
+      "repository": "bartowski/Qwen_Qwen3-Next-80B-A3B-Instruct-GGUF",
+      "revision": "c07b9268d97d8ba09d0529980627f3bd70f5f90a",
+      "filename": "Qwen_Qwen3-Next-80B-A3B-Instruct-Q2_K.gguf",
+      "size_bytes": 28167604704,
+      "sha256": "85c91f47bc1e29d00ee9d1ecc56fa936636c9ceb7993787162ed3df01a3eb236"
+    },
+    {
+      "id": "deepseek-v4-flash-pinned",
+      "model_id": "deepseek-ai/DeepSeek-V4-Flash",
+      "total_parameters_billions": 284,
+      "active_parameters_billions": 13,
+      "gguf_architecture": "deepseek4",
+      "repository": "antirez/deepseek-v4-gguf",
+      "revision": "b0c3326275d2207e25e42bc8ac0704952466b5bb",
+      "filename": "DeepSeek-V4-Flash-IQ2XXS-w2Q2K-AProjQ8-SExpQ8-OutQ8-chat-v2-imatrix.gguf",
+      "size_bytes": 86720111488,
+      "sha256": "efc7ed607ff27076e3e501fc3fefefa33c0ed8cf1eff483a2b7fdc0c2e616668"
+    }
+  ]
+}

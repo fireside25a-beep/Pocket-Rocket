@@ -1,0 +1,18 @@
+{
+  "status": 206,
+  "bytes_read": 65536,
+  "content_range": "bytes 0-65535/28902086784",
+  "gguf_magic": "GGUF",
+  "source": "https://huggingface.co/bartowski/Qwen_Qwen3.5-122B-A10B-GGUF/resolve/fec8b222a2eddc3346d6b6d7f7c85efea93cd6bf/Qwen_Qwen3.5-122B-A10B-IQ1_S.gguf",
+  "general.architecture": "qwen35moe",
+  "general.type": "model",
+  "general.sampling.top_k": 20,
+  "general.sampling.top_p": 0.949999988079071,
+  "general.sampling.temp": 0.6000000238418579,
+  "general.name": "Qwen3.5 122B A10B",
+  "general.basename": "Qwen3.5",
+  "general.size_label": "122B-A10B",
+  "general.license": "apache-2.0",
+  "general.license.link": "https://huggingface.co/Qwen/Qwen3.5-122B-A10B/blob/main/LICENSE",
+  "downloaded_header_sha256": "64aed0684ebb8393ed504c17546d6ef10566d953a9326bed9b93af65b6f47f1e"
+}
