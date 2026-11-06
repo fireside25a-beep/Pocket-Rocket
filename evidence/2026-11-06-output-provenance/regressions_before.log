@@ -1,0 +1,127 @@
+test_absent_roots_can_still_be_supplied (__main__.ReceiptIdentityContract.test_absent_roots_can_still_be_supplied) ... ok
+test_cli_inferred_roots_remain_valid (__main__.ReceiptIdentityContract.test_cli_inferred_roots_remain_valid) ... ok
+test_cli_root_overrides_are_rejected (__main__.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) ... 
+  test_cli_root_overrides_are_rejected (__main__.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) (flag='--model-root') ... FAIL
+  test_cli_root_overrides_are_rejected (__main__.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) (flag='--request-root') ... FAIL
+test_matching_identity_control (__main__.ReceiptIdentityContract.test_matching_identity_control) ... ok
+test_model_relabel_must_be_rejected (__main__.ReceiptIdentityContract.test_model_relabel_must_be_rejected) ... FAIL
+test_request_relabel_must_be_rejected (__main__.ReceiptIdentityContract.test_request_relabel_must_be_rejected) ... FAIL
+test_transcript_tamper_control (__main__.ReceiptIdentityContract.test_transcript_tamper_control) ... ok
+test_both_large_pipes_are_drained (__main__.TransportOutputContract.test_both_large_pipes_are_drained) ... FAIL
+test_diagnostics_must_not_be_returned_as_answer (__main__.TransportOutputContract.test_diagnostics_must_not_be_returned_as_answer) ... FAIL
+test_failure_preserves_bounded_diagnostic_tail (__main__.TransportOutputContract.test_failure_preserves_bounded_diagnostic_tail) ... ok
+test_large_stderr_is_drained_without_answer_contamination (__main__.TransportOutputContract.test_large_stderr_is_drained_without_answer_contamination) ... FAIL
+test_nonzero_exit_control (__main__.TransportOutputContract.test_nonzero_exit_control) ... ok
+test_recursive_proposal_and_answer_hash_exclude_diagnostics (__main__.TransportOutputContract.test_recursive_proposal_and_answer_hash_exclude_diagnostics) ... FAIL
+test_stderr_only_must_not_count_as_inference_output (__main__.TransportOutputContract.test_stderr_only_must_not_count_as_inference_output) ... FAIL
+test_stdout_answer_control (__main__.TransportOutputContract.test_stdout_answer_control) ... ok
+test_unterminated_unicode_stdout_is_preserved (__main__.TransportOutputContract.test_unterminated_unicode_stdout_is_preserved) ... FAIL
+test_whitespace_stdout_with_diagnostics_is_rejected (__main__.TransportOutputContract.test_whitespace_stdout_with_diagnostics_is_rejected) ... FAIL
+
+======================================================================
+FAIL: test_cli_root_overrides_are_rejected (__main__.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) (flag='--model-root')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 150, in test_cli_root_overrides_are_rejected
+    self.assertRaises(SystemExit) as caught:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: SystemExit not raised
+
+======================================================================
+FAIL: test_cli_root_overrides_are_rejected (__main__.ReceiptIdentityContract.test_cli_root_overrides_are_rejected) (flag='--request-root')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 150, in test_cli_root_overrides_are_rejected
+    self.assertRaises(SystemExit) as caught:
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: SystemExit not raised
+
+======================================================================
+FAIL: test_model_relabel_must_be_rejected (__main__.ReceiptIdentityContract.test_model_relabel_must_be_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 130, in test_model_relabel_must_be_rejected
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_request_relabel_must_be_rejected (__main__.ReceiptIdentityContract.test_request_relabel_must_be_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 134, in test_request_relabel_must_be_rejected
+    with self.assertRaises(ValueError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_both_large_pipes_are_drained (__main__.TransportOutputContract.test_both_large_pipes_are_drained)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 84, in test_both_large_pipes_are_drained
+    self.assertEqual(len(text), 1048576)
+AssertionError: 2097152 != 1048576
+
+======================================================================
+FAIL: test_diagnostics_must_not_be_returned_as_answer (__main__.TransportOutputContract.test_diagnostics_must_not_be_returned_as_answer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 39, in test_diagnostics_must_not_be_returned_as_answer
+    self.assertEqual(text, "answer-42\n")
+AssertionError: 'diagnostic-only\nanswer-42\n' != 'answer-42\n'
+- diagnostic-only
+  answer-42
+
+
+======================================================================
+FAIL: test_large_stderr_is_drained_without_answer_contamination (__main__.TransportOutputContract.test_large_stderr_is_drained_without_answer_contamination)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 54, in test_large_stderr_is_drained_without_answer_contamination
+    self.assertEqual(len(text), len("answer-42\n"))
+AssertionError: 1048586 != 10
+
+======================================================================
+FAIL: test_recursive_proposal_and_answer_hash_exclude_diagnostics (__main__.TransportOutputContract.test_recursive_proposal_and_answer_hash_exclude_diagnostics)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 99, in test_recursive_proposal_and_answer_hash_exclude_diagnostics
+    self.assertEqual(result.answer, "answer-42\n")
+AssertionError: 'native diagnostic\nanswer-42\n' != 'answer-42\n'
+- native diagnostic
+  answer-42
+
+
+======================================================================
+FAIL: test_stderr_only_must_not_count_as_inference_output (__main__.TransportOutputContract.test_stderr_only_must_not_count_as_inference_output)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 42, in test_stderr_only_must_not_count_as_inference_output
+    with self.assertRaisesRegex(RuntimeError, "no inference output"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+======================================================================
+FAIL: test_unterminated_unicode_stdout_is_preserved (__main__.TransportOutputContract.test_unterminated_unicode_stdout_is_preserved)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 75, in test_unterminated_unicode_stdout_is_preserved
+    self.assertEqual(text, "answer-\u03a9")
+AssertionError: 'answer-Ωdiagnostic' != 'answer-Ω'
+- answer-Ωdiagnostic
++ answer-Ω
+
+
+======================================================================
+FAIL: test_whitespace_stdout_with_diagnostics_is_rejected (__main__.TransportOutputContract.test_whitespace_stdout_with_diagnostics_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<workspace>/pocket-rocket-review/tests/test_output_provenance.py", line 67, in test_whitespace_stdout_with_diagnostics_is_rejected
+    with self.assertRaisesRegex(RuntimeError, "no inference output"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+----------------------------------------------------------------------
+Ran 17 tests in 1.642s
+
+FAILED (failures=11)

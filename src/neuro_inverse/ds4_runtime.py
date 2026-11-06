@@ -271,13 +271,23 @@ def _execute_guarded(command: list[str], *, cwd: Path, env: dict[str, str],
     """Execute one native model process under the shared process-tree RSS gate."""
     started = time.monotonic()
     process = subprocess.Popen(command, cwd=cwd, env=env, stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, text=True, start_new_session=True)
-    if process.stdout is None:
+                               stderr=subprocess.PIPE, text=True, start_new_session=True)
+    if process.stdout is None or process.stderr is None:
         process.kill()
         raise RuntimeError("unable to capture ds4 output")
     output: list[str] = []
     reader = threading.Thread(target=lambda: output.extend(iter(process.stdout.readline, "")), daemon=True)
+    # Native diagnostics must never become model proposals. Drain this pipe
+    # concurrently to prevent a full stderr pipe from blocking the child, while
+    # retaining only a bounded diagnostic tail for failed execution.
+    diagnostics = [""]
+    def drain_diagnostics() -> None:
+        assert process.stderr is not None
+        for chunk in iter(lambda: process.stderr.read(4096), ""):
+            diagnostics[0] = (diagnostics[0] + chunk)[-12000:]
+    diagnostic_reader = threading.Thread(target=drain_diagnostics, daemon=True)
     reader.start()
+    diagnostic_reader.start()
     peak = 0
     reason: str | None = None
     while process.poll() is None:
@@ -296,14 +306,17 @@ def _execute_guarded(command: list[str], *, cwd: Path, env: dict[str, str],
             break
         time.sleep(0.05)
     reader.join(timeout=10)
+    diagnostic_reader.join(timeout=10)
     process.stdout.close()
+    process.stderr.close()
     peak = max(peak, sum(_rss_bytes(pid) for pid in _descendants(process.pid)))
     text = "".join(output)
     elapsed = time.monotonic() - started
     if reason is not None:
         raise RuntimeError(f"ds4 execution stopped: {reason}")
     if process.returncode != 0:
-        raise RuntimeError(f"ds4 inference failed ({process.returncode})\n{text[-12000:]}")
+        detail = (text[-12000:] + diagnostics[0])[-12000:]
+        raise RuntimeError(f"ds4 inference failed ({process.returncode})\n{detail}")
     if not text.strip():
         raise RuntimeError("ds4 returned no inference output")
     return text, peak, elapsed

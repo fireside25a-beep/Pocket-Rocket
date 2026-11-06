@@ -65,6 +65,10 @@ def create_receipt(*, source_kind: str, transcript: Mapping[str, Any], certifica
     for label, value in (("model_root", model_root), ("request_root", request_root)):
         if len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value):
             raise ValueError(f"{label} must be lowercase SHA-256")
+        # An explicit label may supply missing provenance, but cannot override
+        # an identity already committed by the verified source transcript.
+        if label in transcript and transcript[label] != value:
+            raise ValueError(f"{label} does not match the source transcript")
     payload = {
         "domain": "neuro-inverse-governance-receipt-v1",
         "source_kind": source_kind,
