@@ -1,0 +1,10 @@
+[
+  {"id":"smoke-01","prompt":"What is 2 + 2? Reply with the numeral only.","max_tokens":16,"expected":"4"},
+  {"id":"smoke-02","prompt":"What is 17 multiplied by 6? Reply with the numeral only.","max_tokens":16,"expected":"102"},
+  {"id":"smoke-03","prompt":"Reverse the letters in ABCDE. Reply with the result only.","max_tokens":16,"expected":"EDCBA"},
+  {"id":"timing-01","prompt":"Explain why a watch needs a source of energy. Write one paragraph of about 100 words.","max_tokens":64},
+  {"id":"timing-02","prompt":"Explain why a clock can drift. Write one paragraph of about 100 words.","max_tokens":64},
+  {"id":"timing-03","prompt":"Explain how a pendulum keeps time. Write one paragraph of about 100 words.","max_tokens":64},
+  {"id":"timing-04","prompt":"Explain the role of lubrication in a mechanical watch. Write one paragraph of about 100 words.","max_tokens":64},
+  {"id":"timing-05","prompt":"Explain how temperature can affect a mechanical clock. Write one paragraph of about 100 words.","max_tokens":64}
+]

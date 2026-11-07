@@ -1,0 +1,90 @@
+{
+  "candidates": [
+    {
+      "blockers": [
+        "ARCHITECTURE_NOT_SUPPORTED_BY_REVIEWED_DS4",
+        "NOT_POCKET_ROCKET_PINNED_MODEL"
+      ],
+      "candidate": "qwen35-122b-iq1s",
+      "download_started": false,
+      "fits_disk_with_reserve": true,
+      "inference": "NOT_RUN",
+      "matches_production_model_pin": false,
+      "memory_8gb": "NOT_MEASURED",
+      "size_bytes": 28902086784,
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        "ARCHITECTURE_NOT_SUPPORTED_BY_REVIEWED_DS4",
+        "NOT_POCKET_ROCKET_PINNED_MODEL"
+      ],
+      "candidate": "qwen35-122b-iq1m",
+      "download_started": false,
+      "fits_disk_with_reserve": true,
+      "inference": "NOT_RUN",
+      "matches_production_model_pin": false,
+      "memory_8gb": "NOT_MEASURED",
+      "size_bytes": 31790258304,
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        "ARCHITECTURE_NOT_SUPPORTED_BY_REVIEWED_DS4",
+        "NOT_POCKET_ROCKET_PINNED_MODEL",
+        "OUTSIDE_PLANNING_BAND_25_TO_35_DECIMAL_GB"
+      ],
+      "candidate": "glm45-air-iq1m",
+      "download_started": false,
+      "fits_disk_with_reserve": true,
+      "inference": "NOT_RUN",
+      "matches_production_model_pin": false,
+      "memory_8gb": "NOT_MEASURED",
+      "size_bytes": 37856537056,
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        "ARCHITECTURE_NOT_SUPPORTED_BY_REVIEWED_DS4",
+        "NOT_POCKET_ROCKET_PINNED_MODEL",
+        "DOES_NOT_MEET_STRICT_OVER_90B_REQUEST"
+      ],
+      "candidate": "qwen3-next-80b-q2k",
+      "download_started": false,
+      "fits_disk_with_reserve": true,
+      "inference": "NOT_RUN",
+      "matches_production_model_pin": false,
+      "memory_8gb": "NOT_MEASURED",
+      "size_bytes": 28167604704,
+      "status": "BLOCKED"
+    },
+    {
+      "blockers": [
+        "OUTSIDE_PLANNING_BAND_25_TO_35_DECIMAL_GB",
+        "INSUFFICIENT_DISK_WITH_4_GIB_RESERVE"
+      ],
+      "candidate": "deepseek-v4-flash-pinned",
+      "download_started": false,
+      "fits_disk_with_reserve": false,
+      "inference": "NOT_RUN",
+      "matches_production_model_pin": true,
+      "memory_8gb": "NOT_MEASURED",
+      "size_bytes": 86720111488,
+      "status": "BLOCKED"
+    }
+  ],
+  "disk_reserve_bytes": 4294967296,
+  "ds4_revision": "84cc882352757baf628a1776badf7cc54d584e28",
+  "free_disk_bytes": 44164096000,
+  "kind": "experimental_preflight_not_an_inference_certificate",
+  "planning_assumptions": {
+    "memory_budget_uses_decimal_gb": true,
+    "minimum_total_parameters_billions_exclusive": 90,
+    "roughly_30gb_range_bytes": [
+      25000000000,
+      35000000000
+    ]
+  },
+  "production_default_process_rss_cap_bytes": 15569256448,
+  "requested_total_memory_bytes": 8000000000
+}
